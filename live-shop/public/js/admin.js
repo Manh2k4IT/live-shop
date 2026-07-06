@@ -690,7 +690,7 @@ async function saveProduct() {
           ? Math.max(0, Math.floor(Number(row.colorStock)))
           : null
       }))
-      .filter((row) => row.file || row.existingUrl || row.name);
+      .filter((row) => row.file || row.existingUrl);
 
     const uploadedVariantImages = [];
     for (const row of normalizedRows) {
@@ -719,11 +719,6 @@ async function saveProduct() {
         image: uploadedVariantImages[index] || row.existingUrl || fallbackExistingImages[index] || baseVariantImage,
         colorStock: Number.isFinite(Number(row.colorStock)) ? Math.max(0, Math.floor(Number(row.colorStock))) : null
       }));
-
-    if (!isEditing && normalizedRows.length && !baseVariantImage) {
-      showToast("Vui lòng chọn ít nhất 1 ảnh cho màu");
-      return;
-    }
 
     const images = finalVariantRows.length
       ? finalVariantRows.map((row) => row.image || baseVariantImage).filter(Boolean)
