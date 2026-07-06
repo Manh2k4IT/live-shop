@@ -1202,6 +1202,8 @@
     let productsById = new Map();
     let latestCartItems = [];
     let popupActionInFlight = false;
+    let shopSettingsCache = null;
+    let lastSettingsFetchAt = 0;
 
     const DEFAULT_SHOP_LOGO = `data:image/svg+xml;utf8,${encodeURIComponent(`
       <svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
@@ -1223,6 +1225,37 @@
       logo.addEventListener("error", () => {
         logo.src = DEFAULT_SHOP_LOGO;
       }, { once: true });
+    }
+
+    function applyShopLogo(logoUrl) {
+      const logo = document.getElementById("shopLogo");
+      if (!logo) return;
+
+      const nextLogo = String(logoUrl || "").trim() || DEFAULT_SHOP_LOGO;
+      if (logo.src.endsWith(nextLogo)) return;
+      logo.src = nextLogo;
+    }
+
+    async function loadShopSettings(force = false) {
+      const now = Date.now();
+      if (!force && shopSettingsCache && now - lastSettingsFetchAt < 5000) {
+        applyShopLogo(shopSettingsCache.shopLogo);
+        return shopSettingsCache;
+      }
+
+      try {
+        const res = await fetch(API + "/settings");
+        const data = await res.json();
+        if (!res.ok) return shopSettingsCache;
+
+        shopSettingsCache = data || {};
+        lastSettingsFetchAt = now;
+        applyShopLogo(shopSettingsCache.shopLogo);
+        return shopSettingsCache;
+      } catch (error) {
+        applyShopLogo(DEFAULT_SHOP_LOGO);
+        return shopSettingsCache;
+      }
     }
 
     function setPopupBusy(isBusy) {
@@ -1688,7 +1721,7 @@
 
       isRealtimeRefreshing = true;
       try {
-        await Promise.all([load(), loadCart()]);
+        await Promise.all([load(true), loadCart()]);
       } finally {
         isRealtimeRefreshing = false;
         if (hasPendingRealtimeRefresh) {
@@ -1715,7 +1748,9 @@
       });
     }
 
-    async function load() {
+    async function load(forceSettings = false) {
+      await loadShopSettings(forceSettings);
+
       const category = getCurrentCategory();
       const res = await fetch(getCategoryProductsUrl());
       const data = await res.json();
@@ -1807,7 +1842,7 @@
         return;
       }
 
-      await Promise.all([loadCart(), load()]);
+      await Promise.all([loadCart(), load(false)]);
       showToast("Đã thêm vào giỏ hàng");
     }
 
@@ -1828,7 +1863,7 @@
       }
 
       popupActiveProductId = Number(id);
-      await Promise.all([loadCart(), load()]);
+      await Promise.all([loadCart(), load(false)]);
       openCartPopup();
     }
 
@@ -2308,7 +2343,7 @@
         return;
       }
 
-      await Promise.all([loadCart(), load()]);
+      await Promise.all([loadCart(), load(false)]);
       showToast("Đã bỏ sản phẩm khỏi giỏ hàng");
     }
 
@@ -2326,7 +2361,7 @@
         return;
       }
 
-      await Promise.all([loadCart(), load()]);
+      await Promise.all([loadCart(), load(false)]);
       showToast("Đã cập nhật số lượng");
     }
 
@@ -2352,7 +2387,7 @@
       document.getElementById("customerName").value = "";
       document.getElementById("customerPhone").value = "";
       document.getElementById("customerAddress").value = "";
-      await Promise.all([loadCart(), load()]);
+      await Promise.all([loadCart(), load(false)]);
     }
 
     if (!socket) {
@@ -2363,7 +2398,7 @@
       }, 10000);
     }
 
-    load();
+    load(true);
     loadCart();
     closeCartPopup();
   </script>

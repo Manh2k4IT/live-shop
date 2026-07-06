@@ -235,6 +235,10 @@ const DEFAULT_ORDERS = [
 
 ];
 
+const DEFAULT_SETTINGS = {
+    shopLogo: "/uploads/logogusa.jpg"
+};
+
 function cloneData(value) {
 
     return JSON.parse(JSON.stringify(value));
@@ -246,6 +250,8 @@ let products = cloneData(DEFAULT_PRODUCTS);
 let cart = [];
 
 let orders = cloneData(DEFAULT_ORDERS);
+
+let appSettings = cloneData(DEFAULT_SETTINGS);
 
 let dataRevision = 0;
 let persistTimer = null;
@@ -1096,6 +1102,7 @@ async function writeStateFileOnce() {
         products,
         cart,
         orders,
+            settings: appSettings,
         dataRevision
     };
 
@@ -1176,6 +1183,12 @@ function loadPersistedState() {
         products = Array.isArray(parsed.products) ? parsed.products : cloneData(DEFAULT_PRODUCTS);
         cart = Array.isArray(parsed.cart) ? parsed.cart : [];
         orders = Array.isArray(parsed.orders) ? parsed.orders : cloneData(DEFAULT_ORDERS);
+        appSettings = (parsed.settings && typeof parsed.settings === "object")
+            ? {
+                ...cloneData(DEFAULT_SETTINGS),
+                ...parsed.settings
+            }
+            : cloneData(DEFAULT_SETTINGS);
 
         const revision = Number(parsed.dataRevision);
         dataRevision = Number.isFinite(revision) && revision >= 0 ? Math.floor(revision) : 0;
@@ -1184,6 +1197,7 @@ function loadPersistedState() {
         products = cloneData(DEFAULT_PRODUCTS);
         cart = [];
         orders = cloneData(DEFAULT_ORDERS);
+        appSettings = cloneData(DEFAULT_SETTINGS);
         dataRevision = 0;
     }
 
@@ -1257,6 +1271,14 @@ app.get("/health", (req, res) => {
 
 });
 
+app.get("/settings", (req, res) => {
+
+    res.json({
+        shopLogo: String(appSettings?.shopLogo || DEFAULT_SETTINGS.shopLogo)
+    });
+
+});
+
 app.get("/orders", (req, res) => {
 
     res.json(orders);
@@ -1266,10 +1288,33 @@ app.get("/orders", (req, res) => {
 app.use([
     "/order",
     "/product",
+    "/settings",
     "/upload",
     "/add",
     "/change"
 ], writeLimiter);
+
+app.put("/settings/logo", (req, res) => {
+
+    const logoUrl = String(req.body?.logoUrl || "").trim();
+
+    if (!logoUrl) {
+        return res.status(400).json({ error: "Thiếu đường dẫn logo" });
+    }
+
+    if (!logoUrl.startsWith("/uploads/")) {
+        return res.status(400).json({ error: "Logo phải là ảnh upload hợp lệ" });
+    }
+
+    appSettings.shopLogo = logoUrl;
+    updateClient();
+
+    res.json({
+        success: true,
+        shopLogo: appSettings.shopLogo
+    });
+
+});
 
 app.use("/checkout", checkoutLimiter);
 

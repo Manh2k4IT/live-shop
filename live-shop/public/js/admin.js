@@ -2,6 +2,7 @@ const API = window.location.origin && window.location.origin !== "null"
   ? window.location.origin
   : "http://localhost:3000";
 const state = { products: [], orders: [] };
+const DEFAULT_SHOP_LOGO = "/uploads/logogusa.jpg";
 let productSortable = null;
 const PRODUCT_CATEGORIES = ["Áo", "Quần", "Chân váy", "Đầm", "Khác"];
 let variantRowsData = [];
@@ -259,6 +260,55 @@ function showToast(message) {
   toast.textContent = message;
   toast.classList.add("show");
   setTimeout(() => toast.classList.remove("show"), 1800);
+}
+
+function applyBrandLogo(logoUrl) {
+  const logoEl = document.getElementById("adminBrandLogo");
+  if (!logoEl) return;
+  logoEl.src = String(logoUrl || DEFAULT_SHOP_LOGO);
+}
+
+async function loadBrandSettings() {
+  try {
+    const res = await fetch(API + "/settings");
+    const data = await res.json();
+    if (!res.ok) return;
+    applyBrandLogo(data.shopLogo);
+  } catch (error) {
+    applyBrandLogo(DEFAULT_SHOP_LOGO);
+  }
+}
+
+function triggerLogoPicker() {
+  const input = document.getElementById("adminLogoFile");
+  if (input) input.click();
+}
+
+async function handleLogoFileChange(input) {
+  const file = input?.files?.[0] || null;
+  if (!file) return;
+
+  try {
+    const uploadedUrl = await uploadImage(file);
+    const saveRes = await fetch(API + "/settings/logo", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ logoUrl: uploadedUrl })
+    });
+
+    const saveData = await saveRes.json().catch(() => ({}));
+    if (!saveRes.ok) {
+      throw new Error(saveData.error || "Không thể cập nhật logo");
+    }
+
+    applyBrandLogo(saveData.shopLogo || uploadedUrl);
+    showToast("Đã cập nhật logo");
+  } catch (error) {
+    console.error(error);
+    showToast(error.message || "Lỗi khi đổi logo");
+  } finally {
+    if (input) input.value = "";
+  }
 }
 
 function exportOrdersExcel() {
@@ -998,6 +1048,8 @@ window.deleteProduct = deleteProduct;
 window.toggleProductVisibility = toggleProductVisibility;
 window.exportOrdersPDF = exportOrdersPDF;
 window.exportOrdersExcel = exportOrdersExcel;
+window.triggerLogoPicker = triggerLogoPicker;
+window.handleLogoFileChange = handleLogoFileChange;
 
 document.querySelectorAll(".nav-btn").forEach((btn) => {
   btn.addEventListener("click", () => switchTab(btn.dataset.tab));
@@ -1005,6 +1057,7 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
 
 setupCategoryNavLinks();
 
+loadBrandSettings();
 refreshDashboard();
 setInterval(() => {
   loadOrders();

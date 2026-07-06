@@ -31,6 +31,24 @@
             font-size: 20px;
             line-height: 1.2;
         }
+        .brand-logo-actions {
+            display: flex;
+            justify-content: center;
+            margin-top: 6px;
+        }
+        .brand-logo-btn {
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            color: #111827;
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .brand-logo-btn:hover {
+            background: #f3f4f6;
+        }
         .brand > p {
             text-align: center;
             margin-top: 4px;
@@ -47,8 +65,13 @@
         <div class="brand">
 
             <div class="brand-title">
-                <img src="/uploads/logogusa.jpg" alt="GUSA Logo" />
+                <img id="adminBrandLogo" src="/uploads/logogusa.jpg" alt="GUSA Logo" />
                 <h2>Live Shop</h2>
+            </div>
+
+            <div class="brand-logo-actions">
+                <button type="button" class="brand-logo-btn" onclick="triggerLogoPicker()">🖼️ Thay đổi logo</button>
+                <input id="adminLogoFile" type="file" accept="image/*" style="display:none" onchange="handleLogoFileChange(this)" />
             </div>
 
             <p>Quản trị bán hàng livestream</p>
@@ -477,7 +500,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
-<script src="js/admin.js?v=2026070605"></script>
+<script src="js/admin.js?v=2026070606"></script>
 
 </body>
 
