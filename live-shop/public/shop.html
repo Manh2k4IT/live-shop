@@ -1697,6 +1697,7 @@
     let isRealtimeRefreshing = false;
     let hasPendingRealtimeRefresh = false;
     let lastRealtimeFullRefreshAt = 0;
+    let hasDeferredSocketRefresh = false;
 
     async function refreshRealtimeData() {
       if (isRealtimeRefreshing) {
@@ -1735,7 +1736,19 @@
 
     if (socket) {
       socket.on("update", () => {
+        if (document.hidden) {
+          hasDeferredSocketRefresh = true;
+          return;
+        }
+
         scheduleRealtimeRefresh(80);
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && hasDeferredSocketRefresh) {
+          hasDeferredSocketRefresh = false;
+          scheduleRealtimeRefresh(60);
+        }
       });
     }
 
@@ -2398,9 +2411,13 @@
       }, 10000);
     }
 
-    load(true);
-    loadCart();
-    closeCartPopup();
+    async function bootstrapPage() {
+      await load(true);
+      await loadCart();
+      closeCartPopup();
+    }
+
+    bootstrapPage();
   </script>
 </body>
 </html>

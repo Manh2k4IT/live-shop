@@ -247,6 +247,8 @@ function cloneData(value) {
 
 let products = cloneData(DEFAULT_PRODUCTS);
 
+let productsById = new Map();
+
 let cart = [];
 
 let orders = cloneData(DEFAULT_ORDERS);
@@ -259,6 +261,18 @@ let persistInFlight = false;
 let persistRetryRequested = false;
 let broadcastTimer = null;
 let pendingBroadcastRevision = 0;
+
+function rebuildProductsIndex() {
+
+    productsById = new Map(products.map((product) => [Number(product.id), product]));
+
+}
+
+function findProductById(id) {
+
+    return productsById.get(Number(id));
+
+}
 
 function normalizeProductOrder() {
 
@@ -341,6 +355,8 @@ function normalizeProductOrder() {
 
     });
 
+    rebuildProductsIndex();
+
 }
 
 function reconcileCartStockForProduct(productId) {
@@ -348,7 +364,7 @@ function reconcileCartStockForProduct(productId) {
     const targetId = Number(productId);
     if (!Number.isFinite(targetId)) return false;
 
-    const product = products.find((p) => Number(p.id) === targetId);
+    const product = findProductById(targetId);
 
     let changed = false;
 
@@ -1036,7 +1052,7 @@ function getSortedCart(category = "") {
     return [...cart]
         .filter(item => {
 
-            const product = products.find(p => p.id === item.id);
+            const product = findProductById(item.id);
             if (!product) return false;
 
             if (!normalizedCategory) return !isHiddenInTotal(product);
@@ -1053,7 +1069,7 @@ function getSortedCart(category = "") {
 
         })
         .map(item => {
-            const product = products.find(p => p.id === item.id);
+            const product = findProductById(item.id);
 
             if (!product) return item;
 
@@ -1383,7 +1399,7 @@ app.post("/checkout", (req, res) => {
 
     for (const item of checkoutItems) {
 
-        const product = products.find(x => x.id === item.id);
+        const product = findProductById(item.id);
 
         if (!product) {
 
@@ -1540,6 +1556,7 @@ app.post("/product/add", (req, res) => {
     syncProductStockWithVariantStocks(product);
 
     products.push(product);
+    rebuildProductsIndex();
 
     updateClient();
 
@@ -1555,7 +1572,7 @@ app.put("/product/:id", (req, res) => {
 
     const id = Number(req.params.id);
 
-    const product = products.find(x => x.id === id);
+    const product = findProductById(id);
 
     if (!product) {
 
@@ -1658,6 +1675,7 @@ app.put("/product/:id", (req, res) => {
     }
 
     syncProductStockWithVariantStocks(product);
+    rebuildProductsIndex();
 
     if (category !== undefined) {
         const nextCategory = normalizeTextValue(category, "Khác");
@@ -1680,7 +1698,7 @@ app.post("/product/toggle-hidden", (req, res) => {
 
     const { id } = req.body || {};
     const requestedCategory = getRequestedCategory(req);
-    const product = products.find(item => item.id == id);
+    const product = findProductById(id);
 
     if (!product) {
 
@@ -1905,7 +1923,7 @@ app.post("/product/stock", (req, res) => {
 
     } = req.body;
 
-    const product = products.find(x => x.id == id);
+    const product = findProductById(id);
 
     if (!product) {
 
@@ -1944,6 +1962,7 @@ app.delete("/product/:id", (req, res) => {
         p => p.id !== id
 
     );
+    rebuildProductsIndex();
 
     cart = cart.filter(
 
@@ -2011,9 +2030,9 @@ app.post("/add", (req, res) => {
     } = req.body;
     const requestedCategory = getRequestedCategory(req);
 
-    const product = products.find(
+    const product = findProductById(
 
-        x => x.id == id
+        id
 
     );
 
@@ -2166,7 +2185,7 @@ app.post("/change", (req, res) => {
     } = req.body;
     const requestedCategory = getRequestedCategory(req);
 
-    const product = products.find(x => x.id == id);
+    const product = findProductById(id);
 
     if (!product) {
 
