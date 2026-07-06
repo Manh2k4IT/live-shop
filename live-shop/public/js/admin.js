@@ -668,6 +668,7 @@ async function saveProduct() {
   const oldPrice = document.getElementById("oldPrice").value;
   const stock = document.getElementById("stock").value;
   const productId = document.getElementById("productId").value;
+  const saveBtn = document.querySelector(".btn-save");
 
   if (!name) {
     showToast("Vui lòng nhập tên sản phẩm");
@@ -677,6 +678,12 @@ async function saveProduct() {
   if (!category) {
     showToast("Vui lòng chọn danh mục");
     return;
+  }
+
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.dataset.defaultText = saveBtn.textContent;
+    saveBtn.textContent = "Đang lưu...";
   }
 
   try {
@@ -692,14 +699,9 @@ async function saveProduct() {
       }))
       .filter((row) => row.file || row.existingUrl);
 
-    const uploadedVariantImages = [];
-    for (const row of normalizedRows) {
-      if (row.file) {
-        uploadedVariantImages.push(await uploadImage(row.file));
-      } else {
-        uploadedVariantImages.push("");
-      }
-    }
+    const uploadedVariantImages = await Promise.all(
+      normalizedRows.map((row) => (row.file ? uploadImage(row.file) : Promise.resolve("")))
+    );
 
     const existingProduct = isEditing
       ? state.products.find((item) => String(item.id) === String(productId))
@@ -769,10 +771,17 @@ async function saveProduct() {
 
     showToast(isEditing ? "Đã cập nhật sản phẩm" : "Đã thêm sản phẩm");
     closeModal();
-    await refreshDashboard();
+    await load();
+    loadOrders();
   } catch (error) {
     console.error(error);
     showToast(error.message || "Lỗi khi lưu sản phẩm");
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = saveBtn.dataset.defaultText || (productId ? "Cập nhật" : "Lưu sản phẩm");
+      delete saveBtn.dataset.defaultText;
+    }
   }
 }
 
