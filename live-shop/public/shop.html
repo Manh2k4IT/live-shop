@@ -1208,6 +1208,7 @@
     let popupActionInFlight = false;
     let shopSettingsCache = null;
     let lastSettingsFetchAt = 0;
+    let lastProductsSyncAt = 0;
 
     const DEFAULT_SHOP_LOGO = `data:image/svg+xml;utf8,${encodeURIComponent(`
       <svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
@@ -1618,7 +1619,7 @@
       return category ? `${API}/cart?category=${encodeURIComponent(category)}` : `${API}/cart`;
     }
 
-    async function compactCartDuplicates(rawItems) {
+    function compactCartDuplicates(rawItems) {
       const source = Array.isArray(rawItems) ? rawItems : [];
       if (source.length <= 1) return source;
 
@@ -1632,51 +1633,30 @@
       const duplicatedGroups = [...byProduct.values()].filter((group) => group.length > 1);
       if (!duplicatedGroups.length) return source;
 
-      for (const group of duplicatedGroups) {
+      const compacted = [];
+
+      byProduct.forEach((group) => {
+        if (group.length === 1) {
+          compacted.push(group[0]);
+          return;
+        }
+
         const ranked = [...group].sort((a, b) => {
           const aLimit = Number.isFinite(Number(a?.comboStock)) ? Number(a.comboStock) : Number(a?.stock || 0);
           const bLimit = Number.isFinite(Number(b?.comboStock)) ? Number(b.comboStock) : Number(b?.stock || 0);
           return bLimit - aLimit;
         });
 
-        const primary = ranked[0];
+        const primary = { ...ranked[0] };
         const totalQty = group.reduce((sum, item) => sum + Math.max(0, Math.floor(Number(item?.qty) || 0)), 0);
         const primaryLimitRaw = Number.isFinite(Number(primary?.comboStock)) ? Number(primary.comboStock) : Number(primary?.stock || totalQty);
         const primaryLimit = Math.max(0, Math.floor(primaryLimitRaw || 0));
-        const nextQty = Math.min(totalQty, primaryLimit || totalQty);
+        primary.qty = Math.min(totalQty, primaryLimit || totalQty);
 
-        for (const item of ranked.slice(1)) {
-          await fetch(API + "/change", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id: item.id,
-              qty: 0,
-              variantKey: item.variantKey || "default",
-              sizeKey: item.sizeKey || "size:default",
-              itemKey: item.itemKey || "",
-              category: getCurrentCategory()
-            })
-          });
-        }
+        if (primary.qty > 0) compacted.push(primary);
+      });
 
-        await fetch(API + "/change", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: primary.id,
-            qty: nextQty,
-            variantKey: primary.variantKey || "default",
-            sizeKey: primary.sizeKey || "size:default",
-            itemKey: primary.itemKey || "",
-            category: getCurrentCategory()
-          })
-        });
-      }
-
-      const refreshedRes = await fetch(getCategoryCartUrl());
-      const refreshed = await refreshedRes.json();
-      return Array.isArray(refreshed) ? refreshed : [];
+      return compacted;
     }
 
     function normalizeCategory(value) {
@@ -1716,6 +1696,7 @@
     let refreshTimer = null;
     let isRealtimeRefreshing = false;
     let hasPendingRealtimeRefresh = false;
+    let lastRealtimeFullRefreshAt = 0;
 
     async function refreshRealtimeData() {
       if (isRealtimeRefreshing) {
@@ -1725,7 +1706,13 @@
 
       isRealtimeRefreshing = true;
       try {
-        await Promise.all([load(true), loadCart()]);
+        await loadCart();
+
+        const now = Date.now();
+        if (now - lastRealtimeFullRefreshAt > 3500) {
+          await load(false);
+          lastRealtimeFullRefreshAt = now;
+        }
       } finally {
         isRealtimeRefreshing = false;
         if (hasPendingRealtimeRefresh) {
@@ -1759,6 +1746,7 @@
       const res = await fetch(getCategoryProductsUrl());
       const data = await res.json();
       productsById = new Map(data.map((item) => [Number(item.id), item]));
+      lastProductsSyncAt = Date.now();
 
       if (category) {
         const titleEl = document.getElementById("productsHeaderTitle");
@@ -2236,12 +2224,20 @@
     async function loadCart() {
       const draft = getCheckoutDraft();
       const focusState = getCheckoutFocusState();
-      const [cartRes, productsRes] = await Promise.all([fetch(getCategoryCartUrl()), fetch(getCategoryProductsUrl())]);
+      const cartRes = await fetch(getCategoryCartUrl());
       const initialCartData = await cartRes.json();
-      const data = await compactCartDuplicates(initialCartData);
+      const data = compactCartDuplicates(initialCartData);
       latestCartItems = Array.isArray(data) ? data : [];
-      const productsData = await productsRes.json();
-      const productsMap = Object.fromEntries(productsData.map((product) => [product.id, product]));
+      const now = Date.now();
+      const needRefreshProducts = !productsById.size || now - lastProductsSyncAt > 5000;
+      if (needRefreshProducts) {
+        const productsRes = await fetch(getCategoryProductsUrl());
+        const productsData = await productsRes.json();
+        productsById = new Map(productsData.map((item) => [Number(item.id), item]));
+        lastProductsSyncAt = now;
+      }
+
+      const productsMap = Object.fromEntries([...productsById.entries()]);
       const groups = new Map();
 
       data.forEach((item) => {

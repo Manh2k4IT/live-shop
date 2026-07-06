@@ -348,6 +348,8 @@ function reconcileCartStockForProduct(productId) {
     const targetId = Number(productId);
     if (!Number.isFinite(targetId)) return false;
 
+    const product = products.find((p) => Number(p.id) === targetId);
+
     let changed = false;
 
     const untouchedItems = [];
@@ -359,7 +361,6 @@ function reconcileCartStockForProduct(productId) {
             return;
         }
 
-        const product = products.find((p) => Number(p.id) === targetId);
         if (!product) {
             changed = true;
             return;
@@ -1993,9 +1994,6 @@ upload.single("image"),
 =========================== */
 
 app.get("/cart", (req, res) => {
-
-    reconcileEntireCart();
-
     res.json(getSortedCart(getRequestedCategory(req)));
 
 });
