@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: live-shop
+    env: node
+    plan: starter
+    rootDir: live-shop
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data/live-shop/data
+      - key: UPLOAD_DIR
+        value: /var/data/live-shop/uploads
+    disk:
+      name: live-shop-data
+      mountPath: /var/data/live-shop
+      sizeGB: 1

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ADMIN PANEL</title>
+</head>
+
+<body style="font-family:Arial;padding:20px">
+
+<h2>🛠 ADMIN - QUẢN LÝ SẢN PHẨM</h2>
+
+<h3>➕ Thêm sản phẩm</h3>
+
+<input id="name" placeholder="Tên"><br><br>
+<input id="price" placeholder="Giá"><br><br>
+<input id="stock" placeholder="Tồn kho"><br><br>
+<input id="image" placeholder="Link ảnh"><br><br>
+
+<button onclick="addProduct()">Thêm</button>
+
+<hr>
+
+<h3>📦 Danh sách</h3>
+<div id="list"></div>
+
+<script>
+
+const API = "http://localhost:3000";
+
+// ===== LOAD =====
+async function load(){
+  let res = await fetch(API+"/products");
+  let data = await res.json();
+
+  let html = "";
+
+  data.forEach(p=>{
+    html += `
+      <div style="border:1px solid #eee;padding:10px;margin-bottom:10px">
+        <b>${p.name}</b><br>
+        Giá: ${p.price}<br>
+
+        Tồn:
+        <input value="${p.stock}" onchange="updateStock(${p.id},this.value)">
+
+        <br>
+        <img src="${p.image}" width="80">
+      </div>
+    `;
+  });
+
+  document.getElementById("list").innerHTML = html;
+}
+
+// ===== ADD =====
+async function addProduct(){
+  await fetch(API+"/product/add",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      name: document.getElementById("name").value,
+      price: Number(document.getElementById("price").value),
+      stock: Number(document.getElementById("stock").value),
+      image: document.getElementById("image").value
+    })
+  });
+
+  load();
+}
+
+// ===== UPDATE STOCK =====
+async function updateStock(id, stock){
+  await fetch(API+"/product/stock",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ id, stock: Number(stock) })
+  });
+}
+
+load();
+
+</script>
+
+</body>
+</html>

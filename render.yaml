@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: live-shop
+    env: node
+    plan: starter
+    rootDir: live-shop
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data/live-shop/data
+      - key: UPLOAD_DIR
+        value: /var/data/live-shop/uploads
+      - key: PERSIST_DEBOUNCE_MS
+        value: 200
+      - key: BROADCAST_DEBOUNCE_MS
+        value: 100
+      - key: MAX_INFLIGHT_REQUESTS
+        value: 800
+      - key: WRITE_RATE_WINDOW_MS
+        value: 10000
+      - key: WRITE_RATE_MAX
+        value: 120
+      - key: CHECKOUT_RATE_WINDOW_MS
+        value: 10000
+      - key: CHECKOUT_RATE_MAX
+        value: 30
+    disk:
+      name: live-shop-data
+      mountPath: /var/data/live-shop
+      sizeGB: 1

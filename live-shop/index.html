@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>LIVE SHOP PRO</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+  <style>
+    body{margin:0;font-family:Arial;}
+
+    .container{
+      display:flex;
+    }
+
+    .products{
+      flex:2;
+      padding:20px;
+    }
+
+    .card{
+      border:1px solid #eee;
+      padding:10px;
+      margin-bottom:10px;
+      border-radius:10px;
+    }
+
+    .btn{
+      padding:8px;
+      background:black;
+      color:white;
+      border:none;
+      cursor:pointer;
+      width:100%;
+      margin-top:5px;
+    }
+
+    /* CART DRAWER */
+    .cart{
+      position:fixed;
+      right:0;
+      top:0;
+      width:320px;
+      height:100vh;
+      background:#fff;
+      border-left:1px solid #ddd;
+      padding:15px;
+      overflow:auto;
+    }
+
+    .item{
+      border-bottom:1px solid #eee;
+      padding:10px 0;
+    }
+
+    .qty{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    .qty button{
+      padding:5px 10px;
+    }
+
+    .total{
+      font-weight:bold;
+      font-size:18px;
+      margin-top:20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="products">
+    <h2>🔥 LIVE PRODUCTS</h2>
+    <div id="products"></div>
+  </div>
+
+  <div class="cart">
+    <h3>🛒 GIỎ HÀNG PRO</h3>
+    <div id="cart"></div>
+    <div class="total" id="total"></div>
+  </div>
+
+</div>
+
+<script>
+
+const API_BASE = window.location.origin || "http://localhost:3000";
+const socket = io(API_BASE);
+
+// ===== LOAD PRODUCTS =====
+async function loadProducts(){
+  let res = await fetch(`${API_BASE}/products`);
+  let data = await res.json();
+
+  let html = "";
+
+  data.forEach(p=>{
+    html += `
+      <div class="card">
+        <h3>${p.name}</h3>
+        <p>Giá: ${p.price.toLocaleString()}đ</p>
+        <p>Tồn: ${p.stock}</p>
+
+        <button class="btn" onclick="add(${p.id})">
+          ➕ Thêm vào giỏ
+        </button>
+      </div>
+    `;
+  });
+
+  document.getElementById("products").innerHTML = html;
+}
+
+// ===== ADD =====
+async function add(id){
+  await fetch(`${API_BASE}/add`,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ id })
+  });
+}
+
+// ===== CHANGE QTY =====
+async function change(id, qty){
+  await fetch(`${API_BASE}/change`,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ id, qty })
+  });
+}
+
+// ===== CART =====
+function renderCart(cart){
+  let html = "";
+  let total = 0;
+
+  cart.forEach(i=>{
+    total += i.price * i.qty;
+
+    html += `
+      <div class="item">
+        <b>${i.name}</b><br>
+
+        <div class="qty">
+          <button onclick="change(${i.id}, ${i.qty-1})">-</button>
+          ${i.qty}
+          <button onclick="change(${i.id}, ${i.qty+1})">+</button>
+        </div>
+
+        <div>${(i.price*i.qty).toLocaleString()}đ</div>
+      </div>
+    `;
+  });
+
+  document.getElementById("cart").innerHTML = html;
+  document.getElementById("total").innerText = "Tổng: " + total.toLocaleString() + "đ";
+}
+
+// ===== SOCKET =====
+socket.on("update", data=>{
+  renderCart(data.cart);
+  loadProducts();
+});
+
+loadProducts();
+
+</script>
+
+</body>
+</html>

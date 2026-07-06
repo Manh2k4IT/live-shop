@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Quản lý kho Livestream</title>
+
+    <link rel="stylesheet" href="css/admin.css">
+    <style>
+        .brand-title {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            text-align: center;
+        }
+        .brand-title img {
+            width: 110px;
+            height: auto;
+            max-height: 110px;
+            object-fit: contain;
+            border-radius: 18px;
+            display: block;
+            background: white;
+            padding: 4px;
+        }
+        .brand-title h2 {
+            margin: 0;
+            font-size: 20px;
+            line-height: 1.2;
+        }
+        .brand > p {
+            text-align: center;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="app-shell">
+
+    <aside class="sidebar">
+
+        <div class="brand">
+
+            <div class="brand-title">
+                <img src="/uploads/logogusa.jpg" alt="GUSA Logo" />
+                <h2>Live Shop</h2>
+            </div>
+
+            <p>Quản trị bán hàng livestream</p>
+
+        </div>
+
+        <nav class="nav-menu">
+
+            <button class="nav-btn active" data-tab="products">📦 Sản phẩm livestream</button>
+
+            <div class="nav-submenu">
+                <div class="nav-submenu-title">Danh mục con</div>
+                <a class="nav-submenu-link" data-category="Áo" href="/admin.html?category=%C3%81o">Áo</a>
+                <a class="nav-submenu-link" data-category="Quần" href="/admin.html?category=Qu%E1%BA%A7n">Quần</a>
+                <a class="nav-submenu-link" data-category="Chân váy" href="/admin.html?category=Ch%C3%A2n%20v%C3%A1y">Chân váy</a>
+                <a class="nav-submenu-link" data-category="Đầm" href="/admin.html?category=%C4%90%E1%BA%A7m">Đầm</a>
+                <a class="nav-submenu-link" data-category="" href="/admin.html">Tất cả</a>
+            </div>
+
+            <button class="nav-btn" data-tab="orders">🧾 Khách đặt hàng</button>
+
+        </nav>
+
+    </aside>
+
+    <main class="main">
+
+        <section id="products-view" class="view-panel active">
+
+            <div class="container">
+
+                <!-- Header -->
+                <header class="header">
+
+                    <div>
+
+                        <h1>📦 Quản lý kho Livestream</h1>
+
+                        <p>Quản lý sản phẩm nhanh cho phiên livestream</p>
+
+                    </div>
+
+                    <div class="header-actions">
+                        <a id="shop-link" class="btn-add btn-shop-link" href="/shop.html" target="_blank" rel="noopener noreferrer">
+                            🛒 Xem giỏ hàng
+                        </a>
+
+                        <button class="btn-add" onclick="openModal()">
+
+                            + Thêm sản phẩm
+
+                        </button>
+                    </div>
+
+                </header>
+
+                <!-- Dashboard -->
+
+                <section class="dashboard">
+
+                    <div class="card stat-card">
+
+                        <span>Tổng sản phẩm</span>
+
+                        <h2 id="totalProduct">0</h2>
+
+                    </div>
+
+                    <div class="card stat-card">
+
+                        <span>Tổng tồn kho</span>
+
+                        <h2 id="totalStock">0</h2>
+
+                    </div>
+
+                    <div class="card stat-card">
+
+                        <span>Sắp hết</span>
+
+                        <h2 id="lowStock">0</h2>
+
+                    </div>
+
+                    <div class="card stat-card">
+
+                        <span>Hết hàng</span>
+
+                        <h2 id="outStock">0</h2>
+
+                    </div>
+
+                </section>
+
+                <!-- Toolbar -->
+
+                <section class="card toolbar">
+
+                    <input
+
+                        type="text"
+
+                        id="search"
+
+                        placeholder="🔍 Tìm sản phẩm..."
+
+                        onkeyup="load()"
+
+                    >
+
+                </section>
+
+                <!-- Table -->
+
+                <section class="card">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+
+                                <th>Kéo</th>
+
+                                <th>Ảnh</th>
+
+                                <th>Tên sản phẩm</th>
+
+                                <th>Danh mục</th>
+
+                                <th>Giá</th>
+
+                                <th>Tồn kho</th>
+
+                                <th>Trạng thái</th>
+
+                                <th>Thao tác</th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="list">
+
+                        </tbody>
+
+                    </table>
+
+                </section>
+
+            </div>
+
+        </section>
+
+        <section id="orders-view" class="view-panel">
+
+            <div class="container">
+
+                <header class="header">
+
+                    <div>
+
+                        <h1>🧾 Quản lý khách đặt hàng</h1>
+
+                        <p>Theo dõi đơn hàng và cập nhật trạng thái</p>
+
+                    </div>
+
+                </header>
+
+                <section class="dashboard">
+
+                    <div class="card stat-card">
+
+                        <span>Tổng đơn</span>
+
+                        <h2 id="totalOrders">0</h2>
+
+                    </div>
+
+                    <div class="card stat-card">
+
+                        <span>Chờ xử lý</span>
+
+                        <h2 id="pendingOrders">0</h2>
+
+                    </div>
+
+                    <div class="card stat-card">
+
+                        <span>Đã xác nhận</span>
+
+                        <h2 id="confirmedOrders">0</h2>
+
+                    </div>
+
+                    <div class="card stat-card">
+
+                        <span>Hoàn tất</span>
+
+                        <h2 id="doneOrders">0</h2>
+
+                    </div>
+
+                </section>
+
+                <section class="card toolbar">
+                    <input
+                        type="text"
+                        id="order-search"
+                        placeholder="🔍 Tìm đơn hàng..."
+                        onkeyup="loadOrders()"
+                    >
+                    <button class="btn-add export-pdf-btn" onclick="exportOrdersPDF()" style="padding:10px 16px; margin-left:10px;">📄 Xuất PDF</button>
+                    <button class="btn-add export-excel-btn" onclick="exportOrdersExcel()" style="padding:10px 16px; margin-left:10px;">📊 Xuất Excel</button>
+                </section>
+
+                <section class="card">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+
+                                <th>Khách hàng</th>
+
+                                <th>Số điện thoại</th>
+
+                                <th>Địa chỉ</th>
+
+                                <th>Thời gian</th>
+
+                                <th>Tổng tiền</th>
+
+                                <th>Trạng thái</th>
+
+                                <th>Thao tác</th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="order-list">
+
+                        </tbody>
+
+                    </table>
+
+                </section>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<!-- Modal -->
+
+<div id="modal" class="modal">
+
+    <div class="modal-content">
+
+        <div class="modal-header">
+
+            <h2 id="modal-title">➕ Thêm sản phẩm</h2>
+
+            <button class="close" onclick="closeModal()">
+
+                ✕
+
+            </button>
+
+        </div>
+
+        <div class="form">
+
+            <input type="hidden" id="productId">
+
+            <label>
+
+                Tên sản phẩm
+
+                <input
+
+                    id="name"
+
+                    placeholder="Ví dụ: Linen Premium"
+
+                >
+
+            </label>
+
+            <label>
+
+                Mã SKU
+
+                <input
+
+                    id="sku"
+
+                    placeholder="Ví dụ: SKU-AO-001"
+
+                >
+
+            </label>
+
+            <label>
+
+                Danh mục
+
+                <select id="category">
+
+                    <option value="Áo">Áo</option>
+
+                    <option value="Quần">Quần</option>
+
+                    <option value="Chân váy">Chân váy</option>
+
+                    <option value="Đầm">Đầm</option>
+
+                    <option value="Khác">Khác</option>
+
+                </select>
+
+            </label>
+
+            <label>
+
+                Giá live
+
+                <input
+
+                    id="price"
+
+                    type="number"
+
+                    placeholder="390000"
+
+                >
+
+            </label>
+
+            <label>
+
+                Giá cũ
+
+                <input
+
+                    id="oldPrice"
+
+                    type="number"
+
+                    placeholder="450000"
+
+                >
+
+            </label>
+
+            <label>
+
+                Tồn kho
+
+                <input
+
+                    id="stock"
+
+                    type="number"
+
+                    placeholder="50"
+
+                >
+
+            </label>
+
+            <div class="variant-editor">
+
+                <label class="variant-editor-title">Màu sắc sản phẩm</label>
+
+                <div id="variantRows" class="variant-rows"></div>
+
+                <div class="variant-editor-actions">
+                    <button type="button" class="variant-add-btn" onclick="addVariantRow()">+ Thêm màu</button>
+                </div>
+
+                <small id="imagesFilesHint">Mỗi dòng gồm ảnh màu bên trái và tên màu bên phải</small>
+
+            </div>
+
+            <input type="hidden" id="imageUrl">
+
+            <button
+
+                class="btn-save"
+
+                onclick="saveProduct()"
+
+            >
+
+                Lưu sản phẩm
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Loading -->
+
+<div id="loading" class="loading">
+
+    Đang tải dữ liệu...
+
+</div>
+
+<!-- Toast -->
+
+<div id="toast" class="toast">
+
+    Thành công
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script src="js/admin.js?v=2026070605"></script>
+
+</body>
+
+</html>

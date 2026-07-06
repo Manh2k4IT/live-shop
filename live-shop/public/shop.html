@@ -1,0 +1,2236 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LIVE SHOP</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --bg: #f5f7fb;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #008060;
+      --accent-dark: #006b50;
+      --border: #e5e7eb;
+      --danger: #dc2626;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Be Vietnam Pro", "Segoe UI", Tahoma, sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .page {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(380px, 0.95fr);
+      min-height: 100vh;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    .panel {
+      background: var(--card);
+      border-radius: 24px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      margin: 0 0 6px;
+      padding: 24px 24px 10px;
+      line-height: 1.2;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-header h2 {
+      font-size: 24px;
+    }
+
+    .panel-header p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .content {
+      min-width: 0;
+      padding: 18px 22px 22px;
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+    }
+
+    .product-grid.category-list {
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    .product-grid.category-list .category-section {
+      margin-bottom: 0;
+    }
+
+    .product-grid.category-list .category-section .product-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .category-section .product-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .category-section {
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 14px;
+      background: #ffffff;
+      margin-bottom: 14px;
+    }
+
+    .category-cart-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      border: 1px solid rgba(0, 128, 96, 0.22);
+      background: #effaf7;
+      color: var(--accent-dark);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .category-cart-btn:hover {
+      background: #dff7ef;
+    }
+
+    .product-image-wrap {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #f3f4f6;
+    }
+
+    .product-main-image {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 3 / 4;
+      object-fit: cover;
+      display: block;
+    }
+
+
+    .product-card {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 14px;
+      background: #fcfdff;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 100%;
+    }
+
+    .product-card img {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 3 / 4;
+      object-fit: cover;
+      display: block;
+    }
+
+    .product-name {
+      font-weight: 700;
+      font-size: 17px;
+      line-height: 1.35;
+      min-height: calc(1.35em * 3);
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      overflow: hidden;
+    }
+
+    .product-meta {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .price-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      margin-top: auto;
+      gap: 12px;
+    }
+
+    .product-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+      width: auto;
+    }
+
+    .product-actions .btn {
+      min-width: 96px;
+      padding: 9px 12px;
+    }
+
+    .price-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .price {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--danger);
+    }
+
+    .price-old {
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: line-through;
+    }
+
+    .btn {
+      border: none;
+      cursor: pointer;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 600;
+      transition: 0.2s ease;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-dark);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+
+    .cart-card {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: #f8fafc;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cart-category-block {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: #ffffff;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .cart-category-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .cart-category-header strong {
+      font-size: 15px;
+    }
+
+    .cart-category-header span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .cart-category-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border);
+      font-weight: 700;
+    }
+
+    .cart-category-total-amount {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--accent-dark);
+    }
+
+    .cart-card img {
+      width: 58px;
+      height: 58px;
+      object-fit: cover;
+      border-radius: 12px;
+      background: #e5e7eb;
+    }
+
+    .cart-info {
+      flex: 1;
+    }
+
+    .cart-remove {
+      border: none;
+      background: #fee2e2;
+      color: #b91c1c;
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .cart-remove:hover {
+      background: #fecaca;
+    }
+
+    .cart-name {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .cart-qty {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .qty-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .qty-btn {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .qty-value {
+      min-width: 24px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .cart-total {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .checkout-form {
+      margin-top: 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .checkout-form input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .checkout-form button {
+      min-width: 0;
+      margin-top: 4px;
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 24px 0;
+    }
+
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) translateY(12px);
+      padding: 16px 22px;
+      border-radius: 14px;
+      color: white;
+      font-weight: 700;
+      font-size: 15px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+      word-break: break-word;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.25s ease;
+      z-index: 1000;
+      min-width: 240px;
+      text-align: center;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) translateY(0);
+    }
+
+    .toast.success {
+      background: #0f9d6e;
+    }
+
+    .toast.error {
+      background: #dc2626;
+    }
+
+    .cart-popup {
+      position: fixed;
+      inset: 0;
+      z-index: 1200;
+      background: rgba(15, 23, 42, 0.42);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 12px;
+      opacity: 1;
+      pointer-events: auto;
+      transition: opacity 0.2s ease;
+    }
+
+    .cart-popup.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .cart-popup-sheet {
+      width: min(560px, 100%);
+      max-height: 88vh;
+      background: white;
+      border-radius: 22px 22px 0 0;
+      box-shadow: 0 22px 60px rgba(15, 23, 42, 0.28);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transform: translateY(0);
+      transition: transform 0.22s ease;
+      overflow: hidden;
+    }
+
+    .cart-popup.hidden .cart-popup-sheet {
+      transform: translateY(16px);
+    }
+
+    .cart-popup-handle {
+      width: 54px;
+      height: 5px;
+      background: #d1d5db;
+      border-radius: 999px;
+      margin: 10px auto 4px;
+    }
+
+    .cart-popup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 14px 10px;
+      border-bottom: 1px solid #edf0f4;
+    }
+
+    .cart-popup-title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .cart-popup-title strong {
+      font-size: 16px;
+      letter-spacing: 0.01em;
+    }
+
+    .cart-popup-title span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .cart-popup-close {
+      border: none;
+      background: #fee2e2;
+      color: #b91c1c;
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      cursor: pointer;
+      position: relative;
+      z-index: 5;
+      pointer-events: auto;
+    }
+
+    .cart-popup-body {
+      padding: 12px 12px 14px;
+      overflow: auto;
+    }
+
+    .popup-product-card {
+      position: relative;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: #fff;
+    }
+
+    .popup-product-card.is-summary {
+      background: #fafafa;
+      border-style: dashed;
+    }
+
+    .popup-product-card.is-editor {
+      border-color: #fda4af;
+      box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.08);
+    }
+
+    .popup-summary-actions {
+      margin-top: 10px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .popup-edit-btn {
+      border: 1px solid #fda4af;
+      background: #fff1f4;
+      color: #be123c;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .popup-product-head {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+    }
+
+    .popup-product-image {
+      width: 96px;
+      height: 96px;
+      border-radius: 12px;
+      object-fit: cover;
+      background: #e5e7eb;
+      display: block;
+    }
+
+    .popup-price-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+
+    .popup-discount-badge {
+      background: #ff2d5e;
+      color: #fff;
+      border-radius: 8px;
+      padding: 2px 7px;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .popup-price-now {
+      color: #e11d48;
+      font-size: 32px;
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .popup-price-old {
+      color: #9ca3af;
+      text-decoration: line-through;
+      font-size: 18px;
+      line-height: 1;
+      font-weight: 600;
+    }
+
+    .popup-product-name {
+      font-weight: 700;
+      font-size: 15px;
+      line-height: 1.25;
+      color: #374151;
+    }
+
+    .popup-meta {
+      color: #6b7280;
+      font-size: 13px;
+      margin-top: 2px;
+    }
+
+    .popup-section-title {
+      margin-top: 12px;
+      margin-bottom: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .popup-variant-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .popup-variant-thumb {
+      border: 1px solid #d1d5db;
+      background: #fff;
+      border-radius: 12px;
+      padding: 4px;
+      cursor: pointer;
+      text-align: left;
+      transition: 0.2s ease;
+    }
+
+    .popup-variant-thumb:disabled {
+      cursor: not-allowed;
+    }
+
+    .popup-variant-image-wrap {
+      position: relative;
+      border-radius: 9px;
+      overflow: hidden;
+    }
+
+    .popup-variant-thumb img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      border-radius: 9px;
+      display: block;
+    }
+
+    .popup-variant-thumb.out {
+      opacity: 0.62;
+      border-style: dashed;
+    }
+
+    .popup-variant-thumb.out img {
+      filter: grayscale(0.2) brightness(0.78);
+    }
+
+    .popup-variant-soldout {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(17, 24, 39, 0.38);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      text-transform: uppercase;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+      pointer-events: none;
+    }
+
+    .popup-variant-label {
+      display: block;
+      margin-top: 6px;
+      font-size: 12px;
+      line-height: 1.2;
+      font-weight: 700;
+      color: #1f2937;
+      text-transform: uppercase;
+      min-height: 28px;
+    }
+
+    .popup-variant-stock {
+      display: block;
+      margin-top: 2px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f766e;
+    }
+
+    .popup-variant-thumb.active {
+      border-color: #ff2d5e;
+      box-shadow: 0 0 0 2px rgba(255, 45, 94, 0.15);
+    }
+
+    .popup-size-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+
+    .popup-size-chip {
+      border: 1px solid #d1d5db;
+      background: #fff;
+      border-radius: 999px;
+      padding: 6px 12px;
+      min-width: 52px;
+      text-align: center;
+      font-weight: 700;
+      color: #1f2937;
+      cursor: pointer;
+    }
+
+    .popup-size-chip.active {
+      border-color: #ff2d5e;
+      color: #be123c;
+      background: #fff1f4;
+      box-shadow: 0 0 0 2px rgba(255, 45, 94, 0.12);
+    }
+
+    .popup-size-chip.out {
+      opacity: 0.5;
+      cursor: not-allowed;
+      text-decoration: line-through;
+    }
+
+    .popup-qty-row {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .popup-qty-row span {
+      font-size: 16px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .popup-selected-combo {
+      margin-top: 8px;
+      color: #0f766e;
+      font-size: 13px;
+      font-weight: 700;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+
+    .cart-popup .qty-control {
+      margin-top: 0;
+      gap: 0;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #f9fafb;
+    }
+
+    .cart-popup .qty-btn {
+      width: 36px;
+      height: 34px;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      font-size: 22px;
+      line-height: 1;
+      color: #111827;
+    }
+
+    .cart-popup .qty-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .cart-popup .qty-value {
+      min-width: 42px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: #111827;
+      border-left: 1px solid #e5e7eb;
+      border-right: 1px solid #e5e7eb;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      background: #fff;
+    }
+
+    .popup-remove {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      border: none;
+      background: #fee2e2;
+      color: #b91c1c;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      z-index: 6;
+      pointer-events: auto;
+    }
+
+    .cart-popup-form {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .cart-popup-form input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+
+    .cart-popup-footer {
+      position: sticky;
+      bottom: 0;
+      margin-top: 14px;
+      background: #fff;
+      border-top: 1px solid #edf0f4;
+      padding-top: 12px;
+    }
+
+    .cart-popup-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 0 0 8px;
+      font-weight: 700;
+      color: #374151;
+    }
+
+    .cart-popup-total span:last-child {
+      color: #e11d48;
+      font-size: 26px;
+      font-weight: 800;
+    }
+
+    .cart-popup-buy {
+      width: 100%;
+      border-radius: 999px;
+      padding: 11px 14px 8px;
+      font-size: 34px;
+      line-height: 1;
+      font-weight: 800;
+      background: #ff2d5e;
+      border: none;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .cart-popup-buy-sub {
+      font-size: 12px;
+      line-height: 1;
+      opacity: 0.95;
+    }
+
+    .cart-popup-alert {
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .cart-popup-alert.error {
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    .cart-popup-success {
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #ecfdf3;
+      color: #166534;
+      border: 1px solid #a7f3d0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .success-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1600;
+      padding: 20px;
+    }
+
+    .success-modal.hidden {
+      display: none;
+    }
+
+    .success-modal-card {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+      padding: 28px 32px;
+      text-align: center;
+      max-width: 420px;
+      width: 100%;
+    }
+
+    .success-modal-icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 16px;
+      border-radius: 50%;
+      background: #ecfdf3;
+      color: #16a34a;
+      display: grid;
+      place-items: center;
+      font-size: 34px;
+    }
+
+    .success-modal-title {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: var(--accent-dark);
+    }
+
+    .success-modal-text {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 900px) {
+      .page {
+        grid-template-columns: 1fr;
+      }
+        .panel {
+          min-width: 0;
+        }
+
+      .category-section .product-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 600px) {
+      body {
+        background: #f5f5f7;
+      }
+
+      .page {
+        gap: 12px;
+        padding: 10px;
+      }
+
+      .panel {
+        border-radius: 16px;
+      }
+
+      .panel-header {
+        padding: 14px 14px 8px;
+      }
+
+      .panel-header h2 {
+        font-size: 21px;
+      }
+
+      .content {
+        padding: 10px 10px 14px;
+      }
+
+      .product-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .product-grid.category-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .category-section .product-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .category-section {
+        padding: 8px;
+        border-radius: 14px;
+        margin-bottom: 10px;
+      }
+
+      .product-card {
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        padding: 0;
+        gap: 6px;
+      }
+
+      .product-image-wrap {
+        border-radius: 0;
+      }
+
+      .product-card img {
+        aspect-ratio: 2 / 3;
+      }
+
+
+      .category-cart-btn {
+        top: 6px;
+        right: 6px;
+        padding: 4px 8px;
+        font-size: 11px;
+      }
+
+      .product-name {
+        margin-top: 4px;
+        font-size: 16px;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: .01em;
+        line-height: 1.25;
+        min-height: calc(1.25em * 3);
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        overflow: hidden;
+      }
+
+      .product-meta {
+        display: block;
+        text-align: center;
+        font-size: 12px;
+        line-height: 1.25;
+      }
+
+      .price-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .price-block {
+        align-items: center;
+      }
+
+      .price {
+        font-size: 21px;
+        line-height: 1.05;
+      }
+
+      .price-old {
+        font-size: 12px;
+      }
+
+      .product-actions {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: nowrap;
+        gap: 6px;
+      }
+
+      .product-actions .btn {
+        min-width: 0;
+        flex: 1;
+        padding: 9px 6px;
+        border-radius: 11px;
+        font-size: 13px;
+      }
+
+      .cart-popup {
+        padding: 0;
+      }
+
+      .cart-popup-sheet {
+        width: 100%;
+        max-height: 92vh;
+        border-radius: 18px 18px 0 0;
+      }
+
+      .cart-popup-body {
+        padding: 10px;
+      }
+
+      .cart-popup-total span:last-child {
+        font-size: 22px;
+      }
+
+      .popup-price-now {
+        font-size: 30px;
+      }
+
+      .popup-price-old {
+        font-size: 16px;
+      }
+
+      .popup-variant-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+  <div id="cartPopup" class="cart-popup hidden"></div>
+  <div id="successModal" class="success-modal hidden">
+    <div class="success-modal-card">
+      <div class="success-modal-icon">✓</div>
+      <div class="success-modal-title">Đặt hàng thành công</div>
+      <div class="success-modal-text">Quý khách đã đặt hàng trên phiên live thành công. Chúng tôi sẽ liên hệ sớm.</div>
+    </div>
+  </div>
+
+  <div class="page">
+    <section class="panel">
+      <div class="panel-header">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+          <img src="/uploads/logogiohang.jpg" alt="GUSA Logo" style="width:128px; height:128px; object-fit:cover; border-radius:16px;" />
+          <h2 style="margin:0;">🛍 SẢN PHẨM</h2>
+        </div>
+        <p>Chọn sản phẩm trong phiên live tại Gusa</p>
+      </div>
+      <div class="content">
+        <div id="list" class="product-grid"></div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="panel-header">
+        <h2>🛒 Giỏ hàng</h2>
+        <p>Khách hàng sẽ đặt hàng ngay tại đây</p>
+      </div>
+      <div class="content">
+        <div id="cart"></div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const API = window.location.origin || "http://localhost:3000";
+    const socket = window.io ? window.io(API) : null;
+    const CATEGORY_ORDER = ["Áo", "Quần", "Chân váy", "Đầm", "Khác"];
+    const selectedPopupVariantIndexByProduct = new Map();
+    let popupActiveItemKey = "";
+    let popupActiveProductId = null;
+    let productsById = new Map();
+    let latestCartItems = [];
+
+    function splitImageList(value) {
+      if (Array.isArray(value)) {
+        return value.map((item) => String(item || "").trim()).filter(Boolean);
+      }
+
+      if (typeof value !== "string") return [];
+
+      return value
+        .split(/[,\n|]+/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+
+    function getVariantImages(product) {
+      const colorImages = splitImageList(product?.images);
+      if (colorImages.length) return colorImages;
+      return splitImageList(product?.image);
+    }
+
+    function getVariantNames(product) {
+      if (Array.isArray(product?.variantNames)) {
+        return product.variantNames.map((item) => String(item || "").trim());
+      }
+
+      return splitImageList(product?.variantNames);
+    }
+
+    function getAvailableSizes(product) {
+      if (Array.isArray(product?.sizes)) {
+        return product.sizes.map((item) => String(item || "").trim()).filter(Boolean);
+      }
+      return splitImageList(product?.sizes);
+    }
+
+    function getVariantSizeMatrix(product) {
+      if (!Array.isArray(product?.variantSizes)) return [];
+      return product.variantSizes.map((row) => {
+        if (Array.isArray(row)) {
+          return row.map((item) => String(item || "").trim()).filter(Boolean);
+        }
+        return splitImageList(row);
+      });
+    }
+
+    function getVariantStockMatrix(product) {
+      const source = Array.isArray(product?.variantColorStocks)
+        ? product.variantColorStocks
+        : (Array.isArray(product?.variantStocks) ? product.variantStocks : []);
+      return source.map((qty) => {
+        const stock = Number(qty);
+        if (!Number.isFinite(stock) || stock < 0) return null;
+        return Math.floor(stock);
+      });
+    }
+
+    function getColorStockByVariant(product, variantIndex, fallbackStock = 0) {
+      const safeIndex = Math.max(0, Number(variantIndex) || 0);
+      const matrix = getVariantStockMatrix(product);
+      const colorStock = matrix[safeIndex];
+      const totalStock = Number(product?.stock ?? fallbackStock);
+      const safeTotalStock = Number.isFinite(totalStock) ? Math.max(0, Math.floor(totalStock)) : 0;
+
+      if (Number.isFinite(Number(colorStock))) {
+        return Math.min(Math.max(0, Math.floor(Number(colorStock))), safeTotalStock);
+      }
+
+      const combo = Number(product?.comboStock);
+      if (Number.isFinite(combo)) return Math.max(0, Math.floor(combo));
+
+      const stock = Number(product?.stock ?? fallbackStock);
+      if (Number.isFinite(stock)) return Math.max(0, Math.floor(stock));
+
+      return 0;
+    }
+
+    function getAvailableSizesByVariant(product, variantIndex, fallbackSize = "") {
+      if (Array.isArray(product?.availableSizes) && product.availableSizes.length) {
+        return product.availableSizes.map((item) => String(item || "").trim()).filter(Boolean);
+      }
+
+      const matrix = getVariantSizeMatrix(product);
+      const safeIndex = Math.max(0, Number(variantIndex) || 0);
+      const rowSizes = Array.isArray(matrix[safeIndex]) ? matrix[safeIndex].filter(Boolean) : [];
+      if (rowSizes.length) return rowSizes;
+
+      const fallback = getAvailableSizes(product);
+      if (fallback.length) return fallback;
+
+      const safeFallback = String(fallbackSize || "").trim();
+      return safeFallback ? [safeFallback] : [];
+    }
+
+    function getVariantDisplayName(product, index, image) {
+      const names = getVariantNames(product);
+      const variants = getVariantImages(product);
+
+      if (names[index]) return names[index];
+
+      const imageValue = String(image || "").trim();
+      if (imageValue && variants.length) {
+        const byImage = variants.findIndex((item) => item === imageValue);
+        if (byImage >= 0 && names[byImage]) return names[byImage];
+      }
+
+      return `Màu ${index + 1}`;
+    }
+
+    function getPopupItemKey(productId, variantKey = "", sizeKey = "", itemKey = "") {
+      if (itemKey) return String(itemKey);
+      return `${Number(productId)}::${String(variantKey || "default")}::${String(sizeKey || "size:default")}`;
+    }
+
+    function getCurrentQtyForVariant(productId, variantImage, variantName) {
+      const targetId = Number(productId);
+      const safeImage = String(variantImage || "").trim();
+      const safeName = String(variantName || "").trim().toLowerCase();
+
+      return (Array.isArray(latestCartItems) ? latestCartItems : []).reduce((sum, item) => {
+        if (Number(item?.id) !== targetId) return sum;
+
+        const itemImage = String(item?.image || "").trim();
+        const itemName = String(item?.variantName || "").trim().toLowerCase();
+        const sameByImage = safeImage && itemImage === safeImage;
+        const sameByName = !safeImage && safeName && itemName === safeName;
+
+        if (!sameByImage && !sameByName) return sum;
+
+        return sum + Math.max(0, Math.floor(Number(item?.qty) || 0));
+      }, 0);
+    }
+
+    function getPreferredInStockVariantIndex(product, productId = null) {
+      const variants = getVariantImages(product);
+      if (!variants.length) return 0;
+
+      const names = getVariantNames(product);
+      const targetId = Number.isFinite(Number(productId)) ? Number(productId) : Number(product?.id);
+
+      for (let index = 0; index < variants.length; index += 1) {
+        const stock = getColorStockByVariant(product, index, Number(product?.stock || 0));
+        if (stock <= 0) continue;
+
+        const variantName = names[index] || getVariantDisplayName(product, index, variants[index]);
+        const inCartQty = getCurrentQtyForVariant(targetId, variants[index], variantName);
+        const remaining = stock - inCartQty;
+        if (remaining > 0) return index;
+      }
+
+      for (let index = 0; index < variants.length; index += 1) {
+        const stock = getColorStockByVariant(product, index, Number(product?.stock || 0));
+        if (stock > 0) return index;
+      }
+
+      return 0;
+    }
+
+    function getSelectedImageForProduct(id) {
+      const product = productsById.get(Number(id));
+      if (!product) return "";
+
+      const variants = getVariantImages(product);
+      const preferredIndex = getPreferredInStockVariantIndex(product, Number(id));
+      return variants[preferredIndex] || variants[0] || product.image || "";
+    }
+
+    function getSelectedVariantNameForProduct(id) {
+      const product = productsById.get(Number(id));
+      if (!product) return "";
+
+      const variants = getVariantImages(product);
+      const preferredIndex = getPreferredInStockVariantIndex(product, Number(id));
+      const image = variants[preferredIndex] || variants[0] || product.image || "";
+      return getVariantDisplayName(product, preferredIndex, image);
+    }
+
+    function getSelectedSizeForProduct(id) {
+      const product = productsById.get(Number(id));
+      if (!product) return "";
+      const preferredIndex = getPreferredInStockVariantIndex(product, Number(id));
+      const sizes = getAvailableSizesByVariant(product, preferredIndex);
+      return sizes[0] || "";
+    }
+
+    function getPopupSelectedVariantIndex(productId, variantKey, sizeKey, itemKey, variants, itemImage) {
+      const key = getPopupItemKey(productId, variantKey, sizeKey, itemKey);
+      if (!variants.length) return 0;
+
+      const storedIndex = Number(selectedPopupVariantIndexByProduct.get(key));
+      if (Number.isFinite(storedIndex) && storedIndex >= 0 && storedIndex < variants.length) {
+        return storedIndex;
+      }
+
+      const matchedByImage = variants.findIndex((url) => url === itemImage);
+      if (matchedByImage >= 0) return matchedByImage;
+
+      return 0;
+    }
+
+    function setPopupActiveItem(itemKey, productId = null) {
+      popupActiveItemKey = String(itemKey || "");
+      popupActiveProductId = Number.isFinite(Number(productId)) ? Number(productId) : null;
+      renderCartPopup();
+    }
+
+    async function selectPopupVariantImage(button, productId, variantKey, sizeKey, itemKey, variantIndex) {
+      const id = Number(productId);
+      const product = productsById.get(id);
+      if (!product) return;
+
+      const variants = getVariantImages(product);
+      if (!variants.length) return;
+
+      const safeIndex = Math.max(0, Math.min(Number(variantIndex) || 0, variants.length - 1));
+      const requestedStock = getColorStockByVariant(product, safeIndex, Number(product?.stock || 0));
+      if (requestedStock <= 0) {
+        showToast("Màu này đã hết hàng", "error");
+        return;
+      }
+
+      const key = getPopupItemKey(id, variantKey, sizeKey, itemKey);
+      selectedPopupVariantIndexByProduct.set(key, safeIndex);
+
+      const nextImage = variants[safeIndex] || product.image || "";
+      const nextVariantName = getVariantDisplayName(product, safeIndex, nextImage);
+
+      const popupBody = document.getElementById("cartPopupBody");
+      if (!popupBody) return;
+
+      const card = button?.closest?.(".popup-product-card");
+      if (!card) return;
+
+      const itemQty = Number(card.dataset.itemQty || 0);
+      const itemCategory = card.dataset.itemCategory || getCurrentCategory();
+      const currentKey = card.dataset.variantKey || String(variantKey || "default");
+      const currentSize = card.dataset.selectedSize || "";
+      const currentItemKey = card.dataset.itemKey || String(itemKey || "");
+
+      const nextSizes = getAvailableSizesByVariant(product, safeIndex, currentSize);
+      const normalizedCurrentSize = String(currentSize || "").trim();
+      const currentMatch = nextSizes.find((size) => size.toLowerCase() === normalizedCurrentSize.toLowerCase());
+      const nextSize = currentMatch || nextSizes[0] || "";
+
+      const comboStock = getColorStockByVariant(product, safeIndex, Number(card.dataset.comboStock || 0));
+      const nextQty = Math.max(1, Math.min(Math.max(1, itemQty), Math.max(1, comboStock)));
+
+      const res = await fetch(API + "/change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          qty: nextQty,
+          category: itemCategory,
+          itemKey: currentItemKey,
+          variantKey: currentKey,
+          image: nextImage,
+          variantName: nextVariantName,
+          size: nextSize
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || "Không thể đổi màu", "error");
+        return;
+      }
+
+      await Promise.all([loadCart(), load()]);
+      renderCartPopup();
+    }
+
+    async function selectPopupSize(button, productId, variantKey, sizeKey, itemKey, sizeValue) {
+      if (button?.disabled) return;
+
+      const id = Number(productId);
+      const card = button?.closest?.(".popup-product-card");
+      if (!card) return;
+
+      const itemQty = Number(card.dataset.itemQty || 0);
+      const itemCategory = card.dataset.itemCategory || getCurrentCategory();
+      const currentKey = card.dataset.variantKey || String(variantKey || "default");
+      const currentItemKey = card.dataset.itemKey || String(itemKey || "");
+      const currentImage = card.querySelector(".popup-product-image")?.getAttribute("src") || "";
+      const currentVariantName = card.dataset.variantName || "";
+      const nextSize = String(sizeValue || "").trim();
+      const variantIndex = Number(getPopupSelectedVariantIndex(id, currentKey, sizeKey, currentItemKey, getVariantImages(productsById.get(id) || {}), currentImage));
+      const comboStock = getColorStockByVariant(productsById.get(id) || {}, variantIndex, Number(card.dataset.comboStock || 0));
+      const nextQty = Math.max(1, Math.min(Math.max(1, itemQty), Math.max(1, comboStock)));
+
+      const res = await fetch(API + "/change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          qty: nextQty,
+          category: itemCategory,
+          itemKey: currentItemKey,
+          variantKey: currentKey,
+          image: currentImage,
+          variantName: currentVariantName,
+          size: nextSize
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || "Không thể đổi size", "error");
+        return;
+      }
+
+      await Promise.all([loadCart(), load()]);
+      renderCartPopup();
+    }
+
+    function getCurrentCategory() {
+      const category = new URLSearchParams(window.location.search).get("category") || "";
+      return category.trim();
+    }
+
+    function getCategoryProductsUrl() {
+      const category = getCurrentCategory();
+      return category ? `${API}/products?category=${encodeURIComponent(category)}` : `${API}/products`;
+    }
+
+    function getCategoryCartUrl() {
+      const category = getCurrentCategory();
+      return category ? `${API}/cart?category=${encodeURIComponent(category)}` : `${API}/cart`;
+    }
+
+    async function compactCartDuplicates(rawItems) {
+      const source = Array.isArray(rawItems) ? rawItems : [];
+      if (source.length <= 1) return source;
+
+      const byProduct = new Map();
+      source.forEach((item) => {
+        const key = `${Number(item.id)}::${normalizeCategory(item.category || "Khác")}`;
+        if (!byProduct.has(key)) byProduct.set(key, []);
+        byProduct.get(key).push(item);
+      });
+
+      const duplicatedGroups = [...byProduct.values()].filter((group) => group.length > 1);
+      if (!duplicatedGroups.length) return source;
+
+      for (const group of duplicatedGroups) {
+        const ranked = [...group].sort((a, b) => {
+          const aLimit = Number.isFinite(Number(a?.comboStock)) ? Number(a.comboStock) : Number(a?.stock || 0);
+          const bLimit = Number.isFinite(Number(b?.comboStock)) ? Number(b.comboStock) : Number(b?.stock || 0);
+          return bLimit - aLimit;
+        });
+
+        const primary = ranked[0];
+        const totalQty = group.reduce((sum, item) => sum + Math.max(0, Math.floor(Number(item?.qty) || 0)), 0);
+        const primaryLimitRaw = Number.isFinite(Number(primary?.comboStock)) ? Number(primary.comboStock) : Number(primary?.stock || totalQty);
+        const primaryLimit = Math.max(0, Math.floor(primaryLimitRaw || 0));
+        const nextQty = Math.min(totalQty, primaryLimit || totalQty);
+
+        for (const item of ranked.slice(1)) {
+          await fetch(API + "/change", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: item.id,
+              qty: 0,
+              variantKey: item.variantKey || "default",
+              sizeKey: item.sizeKey || "size:default",
+              itemKey: item.itemKey || "",
+              category: getCurrentCategory()
+            })
+          });
+        }
+
+        await fetch(API + "/change", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: primary.id,
+            qty: nextQty,
+            variantKey: primary.variantKey || "default",
+            sizeKey: primary.sizeKey || "size:default",
+            itemKey: primary.itemKey || "",
+            category: getCurrentCategory()
+          })
+        });
+      }
+
+      const refreshedRes = await fetch(getCategoryCartUrl());
+      const refreshed = await refreshedRes.json();
+      return Array.isArray(refreshed) ? refreshed : [];
+    }
+
+    function normalizeCategory(value) {
+      const raw = String(value || "Khác").trim();
+      return raw || "Khác";
+    }
+
+    function openCategoryPage(category) {
+      const target = normalizeCategory(category);
+      window.location.href = `/shop.html?category=${encodeURIComponent(target)}`;
+    }
+
+    function getOrderedCategories(items) {
+      const seen = new Set();
+      const ordered = [];
+
+      items.forEach((item) => {
+        const category = normalizeCategory(item.category);
+        if (seen.has(category)) return;
+        seen.add(category);
+        ordered.push(category);
+      });
+
+      return ordered;
+    }
+
+    function groupItemsByCategory(items) {
+      const groups = new Map();
+      items.forEach((item) => {
+        const category = normalizeCategory(item.category);
+        if (!groups.has(category)) groups.set(category, []);
+        groups.get(category).push(item);
+      });
+      return groups;
+    }
+
+    let refreshTimer = null;
+    let isRealtimeRefreshing = false;
+    let hasPendingRealtimeRefresh = false;
+
+    async function refreshRealtimeData() {
+      if (isRealtimeRefreshing) {
+        hasPendingRealtimeRefresh = true;
+        return;
+      }
+
+      isRealtimeRefreshing = true;
+      try {
+        await Promise.all([load(), loadCart()]);
+      } finally {
+        isRealtimeRefreshing = false;
+        if (hasPendingRealtimeRefresh) {
+          hasPendingRealtimeRefresh = false;
+          scheduleRealtimeRefresh(120);
+        }
+      }
+    }
+
+    function scheduleRealtimeRefresh(delay = 0) {
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+      }
+
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null;
+        refreshRealtimeData();
+      }, Math.max(0, Number(delay) || 0));
+    }
+
+    if (socket) {
+      socket.on("update", () => {
+        scheduleRealtimeRefresh(80);
+      });
+    }
+
+    async function load() {
+      const category = getCurrentCategory();
+      const res = await fetch(getCategoryProductsUrl());
+      const data = await res.json();
+      productsById = new Map(data.map((item) => [Number(item.id), item]));
+
+      if (category) {
+        document.querySelector(".panel-header h2").textContent = `🛍 ${category}`;
+        document.querySelector(".panel-header p").textContent = `Đang mở danh mục ${category}`;
+      }
+
+      const groups = groupItemsByCategory(data);
+      const categories = category
+        ? (groups.has(category) ? [category] : [])
+        : getOrderedCategories(data);
+
+      const html = categories.map((category) => {
+        const products = groups.get(category) || [];
+        return `
+          <section class="category-section">
+            <div class="product-grid">
+              ${products.map((p) => `
+                <div class="product-card">
+                  <div class="product-image-wrap">
+                    <img class="product-main-image" src="${getSelectedImageForProduct(p.id) || p.image || "https://placehold.co/300x220?text=No+Image"}" alt="${p.name}" />
+                    <button class="category-cart-btn" onclick="openCategoryPage('${category.replace(/'/g, "\\'")}')">${category}</button>
+                  </div>
+                  <div class="product-name">${p.name}</div>
+                  <div class="product-meta product-sku">SKU: ${p.sku || "—"}</div>
+                  <div class="product-meta product-stock">Tồn kho: ${p.stock}</div>
+                  <div class="price-row">
+                    <div class="price-block">
+                      <span class="price">${Number(p.price || 0).toLocaleString()}đ</span>
+                      ${p.oldPrice ? `<span class="price-old">${Number(p.oldPrice).toLocaleString()}đ</span>` : ""}
+                    </div>
+                    <div class="product-actions">
+                      <button class="btn btn-primary" onclick="add(${p.id})">+ Thêm</button>
+                      <button class="btn btn-danger" onclick="orderNow(${p.id})">Đặt hàng</button>
+                    </div>
+                  </div>
+                </div>
+              `).join("")}
+            </div>
+          </section>
+        `;
+      }).join("");
+
+      const list = document.getElementById("list");
+      if (!list) return;
+
+      list.className = category ? "product-grid" : "product-grid category-list";
+      list.innerHTML = html || `<div class="empty">${category ? `Danh mục ${category} đang trống` : "Chưa có sản phẩm nào"}</div>`;
+    }
+
+    function showToast(message, type = "success") {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.className = `toast show ${type}`;
+      clearTimeout(showToast.timeout);
+      showToast.timeout = setTimeout(() => {
+        toast.className = "toast";
+      }, 2200);
+    }
+
+    function showOrderSuccessModal() {
+      const modal = document.getElementById("successModal");
+      if (!modal) return;
+      modal.classList.remove("hidden");
+      clearTimeout(showOrderSuccessModal.timeout);
+      showOrderSuccessModal.timeout = setTimeout(() => {
+        modal.classList.add("hidden");
+      }, 2200);
+    }
+
+    async function add(id) {
+      const selectedImage = getSelectedImageForProduct(id);
+      const selectedVariantName = getSelectedVariantNameForProduct(id);
+      const selectedSize = getSelectedSizeForProduct(id);
+      const res = await fetch(API + "/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, image: selectedImage, variantName: selectedVariantName, size: selectedSize, category: getCurrentCategory() })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || "Không thể thêm sản phẩm", "error");
+        return;
+      }
+
+      await Promise.all([loadCart(), load()]);
+      showToast("Đã thêm vào giỏ hàng");
+    }
+
+    async function orderNow(id) {
+      const selectedImage = getSelectedImageForProduct(id);
+      const selectedVariantName = getSelectedVariantNameForProduct(id);
+      const selectedSize = getSelectedSizeForProduct(id);
+      const res = await fetch(API + "/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, image: selectedImage, variantName: selectedVariantName, size: selectedSize, category: getCurrentCategory() })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || "Không thể đặt hàng", "error");
+        return;
+      }
+
+      popupActiveProductId = Number(id);
+      await Promise.all([loadCart(), load()]);
+      openCartPopup();
+    }
+
+    function openCartPopup() {
+      const popup = document.getElementById("cartPopup");
+      if (!popup) return;
+      popup.innerHTML = `
+        <div class="cart-popup-sheet" onclick="event.stopPropagation()">
+          <div class="cart-popup-handle"></div>
+          <div class="cart-popup-header">
+            <div class="cart-popup-title">
+              <strong>Giỏ hàng đặt hàng</strong>
+              <span>Chốt đơn nhanh như TikTok Shop</span>
+            </div>
+            <button class="cart-popup-close" onclick="closeCartPopup()">✕</button>
+          </div>
+          <div id="cartPopupBody" class="cart-popup-body"></div>
+        </div>
+      `;
+      popup.onclick = (event) => {
+        if (event.target === popup) closeCartPopup();
+      };
+      popup.classList.remove("hidden");
+      renderCartPopup();
+    }
+
+    function closeCartPopup() {
+      const popup = document.getElementById("cartPopup");
+      if (popup) popup.classList.add("hidden");
+    }
+
+    function showPopupAlert(message, type = "error") {
+      const popup = document.getElementById("cartPopup");
+      if (!popup) return;
+      const existing = popup.querySelector(".cart-popup-alert");
+      if (existing) existing.remove();
+      const header = popup.querySelector(".cart-popup-header");
+      if (header) {
+        header.insertAdjacentHTML("afterend", `<div class="cart-popup-alert ${type}">${message}</div>`);
+      }
+    }
+
+    function clearPopupMessages() {
+      const popup = document.getElementById("cartPopup");
+      if (!popup) return;
+      popup.querySelectorAll(".cart-popup-alert, .cart-popup-success").forEach((el) => el.remove());
+    }
+
+    function showPopupSuccess() {
+      const popup = document.getElementById("cartPopup");
+      if (!popup) return;
+      const existing = popup.querySelector(".cart-popup-success");
+      if (existing) existing.remove();
+      const header = popup.querySelector(".cart-popup-header");
+      if (header) {
+        header.insertAdjacentHTML("afterend", '<div class="cart-popup-success">Quý khách đã đặt hàng trên phiên live thành công.</div>');
+      }
+    }
+
+    async function renderCartPopup() {
+      clearPopupMessages();
+      const popupBody = document.getElementById("cartPopupBody");
+      if (!popupBody) return;
+      const [cartRes, productsRes] = await Promise.all([fetch(getCategoryCartUrl()), fetch(getCategoryProductsUrl())]);
+      const initialCartData = await cartRes.json();
+      const rawData = await compactCartDuplicates(initialCartData);
+      const productsData = await productsRes.json();
+      const productsMap = Object.fromEntries(productsData.map((product) => [product.id, product]));
+
+      const data = (Array.isArray(rawData) ? rawData : []).map((item) => ({
+        ...item,
+        _popupKey: String(item.itemKey || `${Number(item.id)}::${String(item.variantKey || "default")}::${String(item.sizeKey || "size:default")}`)
+      }));
+      latestCartItems = data;
+
+      if (!data.length) {
+        popupActiveItemKey = "";
+        popupActiveProductId = null;
+        popupBody.innerHTML = '<div class="empty">Giỏ hàng đang trống</div>';
+        return;
+      }
+
+      if (Number.isFinite(Number(popupActiveProductId))) {
+        const preferred = data.find((item) => Number(item.id) === Number(popupActiveProductId));
+        if (preferred) {
+          popupActiveItemKey = preferred._popupKey;
+        }
+        popupActiveProductId = null;
+      }
+
+      if (!popupActiveItemKey || !data.some((item) => item._popupKey === popupActiveItemKey)) {
+        popupActiveItemKey = data[0]._popupKey;
+      }
+
+      let html = "";
+      let total = 0;
+
+      data.forEach((item) => {
+        const product = productsMap[item.id];
+        const price = Number(product?.price ?? item.price ?? 0);
+        const oldPrice = Number(product?.oldPrice ?? item.oldPrice ?? price);
+        const discountPercent = oldPrice > price ? Math.round((1 - price / oldPrice) * 100) : 0;
+        const variants = getVariantImages(product || item);
+        const selectedSize = String(item.selectedSize || "").trim();
+        const selectedVariantIndex = getPopupSelectedVariantIndex(
+          item.id,
+          item.variantKey || "",
+          item.sizeKey || "",
+          item.itemKey || "",
+          variants,
+          item.image || ""
+        );
+        const selectedVariantImage = variants[selectedVariantIndex] || item.image || product?.image || "https://placehold.co/80x80?text=No+Image";
+        const selectedVariantName = item.variantName || getVariantDisplayName(product || item, selectedVariantIndex, selectedVariantImage);
+        const sizes = getAvailableSizesByVariant(product || item, selectedVariantIndex, selectedSize);
+        const finalSelectedSize = sizes.find((size) => size.toLowerCase() === selectedSize.toLowerCase()) || sizes[0] || selectedSize;
+        const comboStock = getColorStockByVariant(product || item, selectedVariantIndex, Number(item.comboStock ?? product?.stock ?? item.stock ?? 0));
+        const lineTotal = price * item.qty;
+        const isEditor = popupActiveItemKey === item._popupKey;
+        total += lineTotal;
+        html += `
+          <div class="popup-product-card ${isEditor ? "is-editor" : "is-summary"}" data-product-id="${item.id}" data-variant-key="${String(item.variantKey || "default").replace(/"/g, "&quot;")}" data-size-key="${String(item.sizeKey || "size:default").replace(/"/g, "&quot;")}" data-item-key="${String(item.itemKey || "").replace(/"/g, "&quot;")}" data-item-qty="${item.qty}" data-item-category="${String(item.category || "").replace(/"/g, "&quot;")}" data-variant-name="${String(selectedVariantName || "").replace(/"/g, "&quot;")}" data-selected-size="${String(finalSelectedSize || "").replace(/"/g, "&quot;")}" data-combo-stock="${comboStock}">
+            <button class="popup-remove" onclick='removeItemPopup(${item.id}, ${JSON.stringify(item.variantKey || "default")}, ${JSON.stringify(item.sizeKey || "size:default")}, ${JSON.stringify(item.itemKey || "")})' title="Bỏ sản phẩm này">✕</button>
+            <div class="popup-product-head">
+              <img class="popup-product-image" src="${selectedVariantImage}" alt="${item.name}" />
+              <div>
+                <div class="popup-price-wrap">
+                  ${discountPercent > 0 ? `<span class="popup-discount-badge">-${discountPercent}%</span>` : ""}
+                  <span class="popup-price-now">${lineTotal.toLocaleString()}đ</span>
+                  ${oldPrice > price ? `<span class="popup-price-old">${(oldPrice * item.qty).toLocaleString()}đ</span>` : ""}
+                </div>
+                <div class="popup-product-name">${item.name}</div>
+                <div class="popup-meta">Màu: ${selectedVariantName}</div>
+                <div class="popup-meta popup-combo-stock">Tồn màu: ${comboStock}</div>
+                ${finalSelectedSize ? `<div class="popup-meta">Size: ${finalSelectedSize}</div>` : ""}
+                <div class="popup-meta">SKU: ${item.sku || "—"}</div>
+                <div class="popup-meta">Tồn kho: ${Number(product?.stock ?? item.stock ?? 0)}</div>
+              </div>
+            </div>
+            ${!isEditor ? `
+              <div class="popup-summary-actions">
+                <button type="button" class="popup-edit-btn" onclick='setPopupActiveItem(${JSON.stringify(item._popupKey)}, ${Number(item.id)})'>Chọn màu/size</button>
+              </div>
+            ` : ""}
+            ${isEditor && variants.length > 1 ? `
+              <div class="popup-section-title">Màu sắc (${variants.length})</div>
+              <div class="popup-variant-grid" aria-label="Chọn màu trong popup">
+                ${variants.map((img, index) => `
+                  ${(() => {
+                    const variantStock = getColorStockByVariant(product || item, index, Number(item.comboStock ?? product?.stock ?? item.stock ?? 0));
+                    const isOut = variantStock <= 0;
+                    return `
+                  <button
+                    type="button"
+                    class="popup-variant-thumb ${index === selectedVariantIndex ? "active" : ""} ${isOut ? "out" : ""}"
+                    data-product-id="${item.id}"
+                    ${isOut ? "disabled" : ""}
+                    onclick='selectPopupVariantImage(this, ${item.id}, ${JSON.stringify(item.variantKey || "default")}, ${JSON.stringify(item.sizeKey || "size:default")}, ${JSON.stringify(item.itemKey || "")}, ${index})'
+                    title="${isOut ? `${getVariantDisplayName(product || item, index, img)} - Đã hết hàng` : getVariantDisplayName(product || item, index, img)}"
+                  >
+                    <div class="popup-variant-image-wrap">
+                      <img src="${img}" alt="${getVariantDisplayName(product || item, index, img)}" />
+                      ${isOut ? '<span class="popup-variant-soldout">Đã hết hàng</span>' : ""}
+                    </div>
+                    <span class="popup-variant-label">${getVariantDisplayName(product || item, index, img)}</span>
+                    <span class="popup-variant-stock">Tồn: ${variantStock}</span>
+                  </button>
+                `;
+                  })()}
+                `).join("")}
+              </div>
+            ` : ""}
+            ${isEditor && sizes.length ? `
+              <div class="popup-section-title">Size (${sizes.length})</div>
+              <div class="popup-size-grid" aria-label="Chọn size trong popup">
+                ${sizes.map((size) => `
+                  <button
+                    type="button"
+                    class="popup-size-chip ${size === finalSelectedSize ? "active" : ""}"
+                    onclick='selectPopupSize(this, ${item.id}, ${JSON.stringify(item.variantKey || "default")}, ${JSON.stringify(item.sizeKey || "size:default")}, ${JSON.stringify(item.itemKey || "")}, ${JSON.stringify(size)})'
+                  >${size}</button>
+                `).join("")}
+              </div>
+            ` : ""}
+            ${isEditor ? `
+            <div class="popup-qty-row">
+              <span>Số lượng</span>
+              <div class="qty-control">
+                <button class="qty-btn" onclick='changeQtyPopup(${item.id}, ${item.qty - 1}, ${JSON.stringify(item.variantKey || "default")}, ${JSON.stringify(item.sizeKey || "size:default")}, ${JSON.stringify(item.itemKey || "")})'>−</button>
+                <span class="qty-value">${item.qty}</span>
+                <button class="qty-btn" ${item.qty >= comboStock ? "disabled" : ""} onclick='changeQtyPopup(${item.id}, ${item.qty + 1}, ${JSON.stringify(item.variantKey || "default")}, ${JSON.stringify(item.sizeKey || "size:default")}, ${JSON.stringify(item.itemKey || "")})'>+</button>
+              </div>
+            </div>
+            ` : ""}
+            ${isEditor ? `<div class="popup-selected-combo">Quý khách đã chọn ${selectedVariantName}${finalSelectedSize ? ` với size ${finalSelectedSize}` : ""}</div>` : ""}
+          </div>
+        `;
+      });
+
+      html += `
+        <div class="cart-popup-form">
+          <input id="popupCustomerName" placeholder="Họ tên khách" required />
+          <input id="popupCustomerPhone" placeholder="Số điện thoại" required />
+          <input id="popupCustomerAddress" placeholder="Địa chỉ nhận hàng" required />
+        </div>
+        <div class="cart-popup-footer">
+          <div class="cart-popup-total">
+            <span>Tổng tiền</span>
+            <span>${total.toLocaleString()}đ</span>
+          </div>
+          <button class="cart-popup-buy" type="button" onclick="checkoutPopup()">
+            <span>Mua ngay</span>
+            <span class="cart-popup-buy-sub">${total.toLocaleString()}đ | Freeship</span>
+          </button>
+        </div>
+      `;
+
+      popupBody.innerHTML = html;
+    }
+
+    async function changeQtyPopup(id, qty, variantKey = "", sizeKey = "", itemKey = "") {
+      const res = await fetch(API + "/change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, qty, variantKey, sizeKey, itemKey, category: getCurrentCategory() })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || "Không thể cập nhật số lượng", "error");
+        showPopupAlert(data.error || "Không thể cập nhật số lượng");
+        return;
+      }
+      await Promise.all([loadCart(), load()]);
+      renderCartPopup();
+      showToast("Đã cập nhật số lượng");
+    }
+
+    async function removeItemPopup(id, variantKey = "", sizeKey = "", itemKey = "") {
+      const res = await fetch(API + "/change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, qty: 0, variantKey, sizeKey, itemKey, category: getCurrentCategory() })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || "Không thể bỏ sản phẩm", "error");
+        return;
+      }
+      await Promise.all([loadCart(), load()]);
+      renderCartPopup();
+      showToast("Đã bỏ sản phẩm khỏi giỏ hàng");
+    }
+
+    async function checkoutPopup() {
+      const customer = document.getElementById("popupCustomerName")?.value.trim() || "";
+      const phone = document.getElementById("popupCustomerPhone")?.value.trim() || "";
+      const address = document.getElementById("popupCustomerAddress")?.value.trim() || "";
+      const category = getCurrentCategory();
+
+      const res = await fetch(API + "/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customer, phone, address, category })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || "Đặt hàng thất bại", "error");
+        showPopupAlert(data.error || "Đặt hàng thất bại");
+        return;
+      }
+
+      closeCartPopup();
+      showOrderSuccessModal();
+      document.getElementById("popupCustomerName").value = "";
+      document.getElementById("popupCustomerPhone").value = "";
+      document.getElementById("popupCustomerAddress").value = "";
+      await Promise.all([loadCart(), load()]);
+    }
+
+    window.selectPopupVariantImage = selectPopupVariantImage;
+    window.selectPopupSize = selectPopupSize;
+    window.setPopupActiveItem = setPopupActiveItem;
+    window.closeCartPopup = closeCartPopup;
+    window.removeItemPopup = removeItemPopup;
+    window.changeQtyPopup = changeQtyPopup;
+    window.checkoutPopup = checkoutPopup;
+
+    function getCheckoutDraft() {
+      return {
+        customer: document.getElementById("customerName")?.value || "",
+        phone: document.getElementById("customerPhone")?.value || "",
+        address: document.getElementById("customerAddress")?.value || ""
+      };
+    }
+
+    function restoreCheckoutDraft(draft) {
+      const customer = document.getElementById("customerName");
+      const phone = document.getElementById("customerPhone");
+      const address = document.getElementById("customerAddress");
+
+      if (customer) customer.value = draft.customer || "";
+      if (phone) phone.value = draft.phone || "";
+      if (address) address.value = draft.address || "";
+    }
+
+    function getCheckoutFocusState() {
+      const active = document.activeElement;
+      if (!active || !["customerName", "customerPhone", "customerAddress"].includes(active.id)) {
+        return null;
+      }
+
+      return {
+        id: active.id,
+        start: active.selectionStart,
+        end: active.selectionEnd
+      };
+    }
+
+    function restoreCheckoutFocus(state) {
+      if (!state) return;
+
+      const input = document.getElementById(state.id);
+      if (!input) return;
+
+      input.focus();
+      if (typeof state.start === "number" && typeof state.end === "number") {
+        input.setSelectionRange(state.start, state.end);
+      }
+    }
+
+    async function loadCart() {
+      const draft = getCheckoutDraft();
+      const focusState = getCheckoutFocusState();
+      const [cartRes, productsRes] = await Promise.all([fetch(getCategoryCartUrl()), fetch(getCategoryProductsUrl())]);
+      const initialCartData = await cartRes.json();
+      const data = await compactCartDuplicates(initialCartData);
+      latestCartItems = Array.isArray(data) ? data : [];
+      const productsData = await productsRes.json();
+      const productsMap = Object.fromEntries(productsData.map((product) => [product.id, product]));
+      const groups = new Map();
+
+      data.forEach((item) => {
+        const product = productsMap[item.id];
+        const category = normalizeCategory(item.category || product?.category);
+        if (!groups.has(category)) {
+          groups.set(category, { items: [], subtotal: 0 });
+        }
+
+        const group = groups.get(category);
+        const price = Number(product?.price ?? item.price ?? 0);
+        group.items.push({ item, product, price });
+        group.subtotal += price * item.qty;
+      });
+
+      const categories = [...groups.keys()];
+
+      if (!data.length) {
+        document.getElementById("cart").innerHTML = '<div class="empty">Giỏ hàng đang trống</div>';
+        restoreCheckoutDraft(draft);
+        restoreCheckoutFocus(focusState);
+        return;
+      }
+
+      let total = 0;
+      let html = categories.map((category) => {
+        const group = groups.get(category);
+        if (!group) return "";
+
+        total += group.subtotal;
+
+        return `
+          <div class="cart-category-block">
+            <div class="cart-category-header">
+              <div>
+                <strong>${category}</strong>
+                <div><span>${group.items.length} sản phẩm</span></div>
+              </div>
+              <div class="cart-category-total-amount">${group.subtotal.toLocaleString()}đ</div>
+            </div>
+            ${group.items.map(({ item, product, price }) => {
+              const oldPrice = Number(product?.oldPrice ?? item.oldPrice ?? price);
+              const comboStock = Number(item?.comboStock);
+              const stockLimit = Number.isFinite(comboStock)
+                ? Math.max(0, Math.floor(comboStock))
+                : Math.max(0, Math.floor(Number(product?.stock ?? item.stock ?? 0) || 0));
+              return `
+                <div class="cart-card">
+                  <img src="${item.image || "https://placehold.co/80x80?text=No+Image"}" alt="${item.name}" />
+                  <div class="cart-info">
+                    <div class="cart-name">${item.name}</div>
+                    ${item.variantName ? `<div class="cart-qty">Màu: ${item.variantName}</div>` : ""}
+                    ${item.selectedSize ? `<div class="cart-qty">Size: ${item.selectedSize}</div>` : ""}
+                    <div class="cart-qty">SKU: ${item.sku || "—"}</div>
+                    <div class="cart-qty">${item.variantName ? `Tồn màu: ${stockLimit}` : `Tồn kho: ${stockLimit}`}</div>
+                    <div class="qty-control">
+                      <button class="qty-btn" onclick='changeQty(${item.id}, ${item.qty - 1}, ${JSON.stringify(item.variantKey || "default")}, ${JSON.stringify(item.sizeKey || "size:default")}, ${JSON.stringify(item.itemKey || "")})'>−</button>
+                      <span class="qty-value">${item.qty}</span>
+                      <button class="qty-btn" ${item.qty >= stockLimit ? "disabled" : ""} onclick='changeQty(${item.id}, ${item.qty + 1}, ${JSON.stringify(item.variantKey || "default")}, ${JSON.stringify(item.sizeKey || "size:default")}, ${JSON.stringify(item.itemKey || "")})'>+</button>
+                    </div>
+                  </div>
+                  <div class="price-block">
+                    <span class="price">${(price * item.qty).toLocaleString()}đ</span>
+                    <span class="price-old">${(oldPrice * item.qty).toLocaleString()}đ</span>
+                  </div>
+                  <button class="cart-remove" onclick='removeItem(${item.id}, ${JSON.stringify(item.variantKey || "default")}, ${JSON.stringify(item.sizeKey || "size:default")}, ${JSON.stringify(item.itemKey || "")})' title="Bỏ sản phẩm này">✕</button>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        `;
+      }).join("");
+
+      html += `
+        <div class="cart-total">
+          <span>Tổng tiền</span>
+          <span>${total.toLocaleString()}đ</span>
+        </div>
+        <form class="checkout-form" onsubmit="event.preventDefault(); checkout();">
+          <input id="customerName" placeholder="Họ tên khách" required />
+          <input id="customerPhone" placeholder="Số điện thoại" required />
+          <input id="customerAddress" placeholder="Địa chỉ nhận hàng" required />
+          <button class="btn btn-primary" type="submit">Mua Hàng</button>
+        </form>
+      `;
+
+      document.getElementById("cart").innerHTML = html;
+      restoreCheckoutDraft(draft);
+      restoreCheckoutFocus(focusState);
+    }
+
+    async function removeItem(id, variantKey = "", sizeKey = "", itemKey = "") {
+      const res = await fetch(API + "/change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, qty: 0, variantKey, sizeKey, itemKey })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast(data.error || "Không thể bỏ sản phẩm", "error");
+        return;
+      }
+
+      await Promise.all([loadCart(), load()]);
+      showToast("Đã bỏ sản phẩm khỏi giỏ hàng");
+    }
+
+    async function changeQty(id, qty, variantKey = "", sizeKey = "", itemKey = "") {
+      const res = await fetch(API + "/change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, qty, variantKey, sizeKey, itemKey })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast(data.error || "Không thể cập nhật số lượng", "error");
+        return;
+      }
+
+      await Promise.all([loadCart(), load()]);
+      showToast("Đã cập nhật số lượng");
+    }
+
+    async function checkout() {
+      const customer = document.getElementById("customerName").value.trim();
+      const phone = document.getElementById("customerPhone").value.trim();
+      const address = document.getElementById("customerAddress").value.trim();
+
+      const res = await fetch(API + "/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customer, phone, address })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast(data.error || "Đặt hàng thất bại", "error");
+        return;
+      }
+
+      showOrderSuccessModal();
+      document.getElementById("customerName").value = "";
+      document.getElementById("customerPhone").value = "";
+      document.getElementById("customerAddress").value = "";
+      await Promise.all([loadCart(), load()]);
+    }
+
+    if (!socket) {
+      setInterval(() => {
+        const focusState = getCheckoutFocusState();
+        if (focusState) return;
+        refreshRealtimeData();
+      }, 10000);
+    }
+
+    load();
+    loadCart();
+    closeCartPopup();
+  </script>
+</body>
+</html>
