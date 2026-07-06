@@ -9,6 +9,7 @@
 
     :root {
       --bg: #f5f7fb;
+      --card: #ffffff;
       --text: #1f2937;
       --muted: #6b7280;
       --accent: #008060;
@@ -56,6 +57,34 @@
     .panel-header p {
       margin: 0;
       color: var(--muted);
+    }
+
+    .shop-header-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    .shop-header-logo {
+      width: 92px;
+      height: 92px;
+      object-fit: cover;
+      border-radius: 16px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .shop-header-title {
+      margin: 0;
+      text-align: center;
+    }
+
+    .shop-header-desc {
+      text-align: center;
     }
 
     .content {
@@ -430,6 +459,14 @@
     .cart-popup.hidden {
       opacity: 0;
       pointer-events: none;
+    }
+
+    .cart-popup.busy .popup-variant-thumb,
+    .cart-popup.busy .popup-size-chip,
+    .cart-popup.busy .qty-btn,
+    .cart-popup.busy .popup-edit-btn {
+      pointer-events: none;
+      opacity: 0.72;
     }
 
     .cart-popup-sheet {
@@ -968,6 +1005,17 @@
         padding: 14px 14px 8px;
       }
 
+      .shop-header-brand {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .shop-header-logo {
+        width: 78px;
+        height: 78px;
+        border-radius: 14px;
+      }
+
       .panel-header h2 {
         font-size: 21px;
       }
@@ -1121,11 +1169,11 @@
   <div class="page">
     <section class="panel">
       <div class="panel-header">
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-          <img src="/uploads/logogiohang.jpg" alt="GUSA Logo" style="width:128px; height:128px; object-fit:cover; border-radius:16px;" />
-          <h2 style="margin:0;">🛍 SẢN PHẨM</h2>
+        <div class="shop-header-brand">
+          <img id="shopLogo" class="shop-header-logo" src="/uploads/logogiohang.jpg" alt="GUSA Logo" />
+          <h2 id="productsHeaderTitle" class="shop-header-title">🛍 SẢN PHẨM</h2>
         </div>
-        <p>Chọn sản phẩm trong phiên live tại Gusa</p>
+        <p id="productsHeaderDesc" class="shop-header-desc">Chọn sản phẩm trong phiên live tại Gusa</p>
       </div>
       <div class="content">
         <div id="list" class="product-grid"></div>
@@ -1153,6 +1201,35 @@
     let popupActiveProductId = null;
     let productsById = new Map();
     let latestCartItems = [];
+    let popupActionInFlight = false;
+
+    const DEFAULT_SHOP_LOGO = `data:image/svg+xml;utf8,${encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#0f766e"/>
+            <stop offset="100%" stop-color="#0ea5a4"/>
+          </linearGradient>
+        </defs>
+        <rect width="180" height="180" rx="26" fill="url(#g)"/>
+        <text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-size="54" font-family="Segoe UI, Arial, sans-serif" font-weight="800" fill="#ffffff">GUSA</text>
+      </svg>
+    `)}`;
+
+    function setupShopLogo() {
+      const logo = document.getElementById("shopLogo");
+      if (!logo) return;
+
+      logo.addEventListener("error", () => {
+        logo.src = DEFAULT_SHOP_LOGO;
+      }, { once: true });
+    }
+
+    function setPopupBusy(isBusy) {
+      const popup = document.getElementById("cartPopup");
+      if (!popup) return;
+      popup.classList.toggle("busy", Boolean(isBusy));
+    }
 
     function splitImageList(value) {
       if (Array.isArray(value)) {
@@ -1359,6 +1436,8 @@
     }
 
     async function selectPopupVariantImage(button, productId, variantKey, sizeKey, itemKey, variantIndex) {
+      if (popupActionInFlight) return;
+
       const id = Number(productId);
       const product = productsById.get(id);
       if (!product) return;
@@ -1399,33 +1478,45 @@
       const comboStock = getColorStockByVariant(product, safeIndex, Number(card.dataset.comboStock || 0));
       const nextQty = Math.max(1, Math.min(Math.max(1, itemQty), Math.max(1, comboStock)));
 
-      const res = await fetch(API + "/change", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id,
-          qty: nextQty,
-          category: itemCategory,
-          itemKey: currentItemKey,
-          variantKey: currentKey,
-          image: nextImage,
-          variantName: nextVariantName,
-          size: nextSize
-        })
-      });
+      card.querySelectorAll(".popup-variant-thumb").forEach((el) => el.classList.remove("active"));
+      if (button) button.classList.add("active");
 
-      const data = await res.json();
-      if (!res.ok) {
-        showToast(data.error || "Không thể đổi màu", "error");
-        return;
+      popupActionInFlight = true;
+      setPopupBusy(true);
+
+      try {
+        const res = await fetch(API + "/change", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id,
+            qty: nextQty,
+            category: itemCategory,
+            itemKey: currentItemKey,
+            variantKey: currentKey,
+            image: nextImage,
+            variantName: nextVariantName,
+            size: nextSize
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.error || "Không thể đổi màu", "error");
+          return;
+        }
+
+        await loadCart();
+        renderCartPopup(false);
+      } finally {
+        popupActionInFlight = false;
+        setPopupBusy(false);
       }
-
-      await Promise.all([loadCart(), load()]);
-      renderCartPopup();
     }
 
     async function selectPopupSize(button, productId, variantKey, sizeKey, itemKey, sizeValue) {
       if (button?.disabled) return;
+      if (popupActionInFlight) return;
 
       const id = Number(productId);
       const card = button?.closest?.(".popup-product-card");
@@ -1442,29 +1533,37 @@
       const comboStock = getColorStockByVariant(productsById.get(id) || {}, variantIndex, Number(card.dataset.comboStock || 0));
       const nextQty = Math.max(1, Math.min(Math.max(1, itemQty), Math.max(1, comboStock)));
 
-      const res = await fetch(API + "/change", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id,
-          qty: nextQty,
-          category: itemCategory,
-          itemKey: currentItemKey,
-          variantKey: currentKey,
-          image: currentImage,
-          variantName: currentVariantName,
-          size: nextSize
-        })
-      });
+      popupActionInFlight = true;
+      setPopupBusy(true);
 
-      const data = await res.json();
-      if (!res.ok) {
-        showToast(data.error || "Không thể đổi size", "error");
-        return;
+      try {
+        const res = await fetch(API + "/change", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id,
+            qty: nextQty,
+            category: itemCategory,
+            itemKey: currentItemKey,
+            variantKey: currentKey,
+            image: currentImage,
+            variantName: currentVariantName,
+            size: nextSize
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.error || "Không thể đổi size", "error");
+          return;
+        }
+
+        await loadCart();
+        renderCartPopup(false);
+      } finally {
+        popupActionInFlight = false;
+        setPopupBusy(false);
       }
-
-      await Promise.all([loadCart(), load()]);
-      renderCartPopup();
     }
 
     function getCurrentCategory() {
@@ -1623,8 +1722,10 @@
       productsById = new Map(data.map((item) => [Number(item.id), item]));
 
       if (category) {
-        document.querySelector(".panel-header h2").textContent = `🛍 ${category}`;
-        document.querySelector(".panel-header p").textContent = `Đang mở danh mục ${category}`;
+        const titleEl = document.getElementById("productsHeaderTitle");
+        const descEl = document.getElementById("productsHeaderDesc");
+        if (titleEl) titleEl.textContent = `🛍 ${category}`;
+        if (descEl) descEl.textContent = `Đang mở danh mục ${category}`;
       }
 
       const groups = groupItemsByCategory(data);
@@ -1751,7 +1852,9 @@
         if (event.target === popup) closeCartPopup();
       };
       popup.classList.remove("hidden");
-      renderCartPopup();
+      popupActionInFlight = false;
+      setPopupBusy(false);
+      renderCartPopup(false);
     }
 
     function closeCartPopup() {
@@ -1787,15 +1890,27 @@
       }
     }
 
-    async function renderCartPopup() {
+    async function renderCartPopup(forceRefresh = false) {
       clearPopupMessages();
       const popupBody = document.getElementById("cartPopupBody");
       if (!popupBody) return;
-      const [cartRes, productsRes] = await Promise.all([fetch(getCategoryCartUrl()), fetch(getCategoryProductsUrl())]);
-      const initialCartData = await cartRes.json();
-      const rawData = await compactCartDuplicates(initialCartData);
-      const productsData = await productsRes.json();
-      const productsMap = Object.fromEntries(productsData.map((product) => [product.id, product]));
+      let rawData = [];
+      let productsMap = {};
+
+      const canUseCached = !forceRefresh && Array.isArray(latestCartItems) && latestCartItems.length && productsById.size;
+
+      if (canUseCached) {
+        rawData = latestCartItems;
+        productsMap = Object.fromEntries([...productsById.entries()]);
+      } else {
+        const [cartRes, productsRes] = await Promise.all([fetch(getCategoryCartUrl()), fetch(getCategoryProductsUrl())]);
+        const initialCartData = await cartRes.json();
+        rawData = await compactCartDuplicates(initialCartData);
+        const productsData = await productsRes.json();
+        productsMap = Object.fromEntries(productsData.map((product) => [product.id, product]));
+        latestCartItems = Array.isArray(rawData) ? rawData : [];
+        productsById = new Map(productsData.map((item) => [Number(item.id), item]));
+      }
 
       const data = (Array.isArray(rawData) ? rawData : []).map((item) => ({
         ...item,
@@ -1949,6 +2064,10 @@
     }
 
     async function changeQtyPopup(id, qty, variantKey = "", sizeKey = "", itemKey = "") {
+      if (popupActionInFlight) return;
+      popupActionInFlight = true;
+      setPopupBusy(true);
+
       const res = await fetch(API + "/change", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1956,16 +2075,25 @@
       });
       const data = await res.json();
       if (!res.ok) {
+        popupActionInFlight = false;
+        setPopupBusy(false);
         showToast(data.error || "Không thể cập nhật số lượng", "error");
         showPopupAlert(data.error || "Không thể cập nhật số lượng");
         return;
       }
-      await Promise.all([loadCart(), load()]);
-      renderCartPopup();
+
+      await loadCart();
+      renderCartPopup(false);
+      popupActionInFlight = false;
+      setPopupBusy(false);
       showToast("Đã cập nhật số lượng");
     }
 
     async function removeItemPopup(id, variantKey = "", sizeKey = "", itemKey = "") {
+      if (popupActionInFlight) return;
+      popupActionInFlight = true;
+      setPopupBusy(true);
+
       const res = await fetch(API + "/change", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1973,11 +2101,16 @@
       });
       const data = await res.json();
       if (!res.ok) {
+        popupActionInFlight = false;
+        setPopupBusy(false);
         showToast(data.error || "Không thể bỏ sản phẩm", "error");
         return;
       }
-      await Promise.all([loadCart(), load()]);
-      renderCartPopup();
+
+      await loadCart();
+      renderCartPopup(false);
+      popupActionInFlight = false;
+      setPopupBusy(false);
       showToast("Đã bỏ sản phẩm khỏi giỏ hàng");
     }
 
@@ -2015,6 +2148,8 @@
     window.removeItemPopup = removeItemPopup;
     window.changeQtyPopup = changeQtyPopup;
     window.checkoutPopup = checkoutPopup;
+
+    setupShopLogo();
 
     function getCheckoutDraft() {
       return {
