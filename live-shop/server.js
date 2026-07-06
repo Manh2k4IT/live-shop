@@ -1223,6 +1223,12 @@ app.get("/products", (req, res) => {
 
 });
 
+app.get("/", (req, res) => {
+
+    res.redirect("/shop.html");
+
+});
+
 app.get("/products/all", (req, res) => {
 
     const category = getRequestedCategory(req);
