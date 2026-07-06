@@ -17,7 +17,7 @@ const writeRateWindowMs = Math.max(1000, Number(process.env.WRITE_RATE_WINDOW_MS
 const writeRateMax = Math.max(20, Number(process.env.WRITE_RATE_MAX) || 120);
 const checkoutRateWindowMs = Math.max(1000, Number(process.env.CHECKOUT_RATE_WINDOW_MS) || 10000);
 const checkoutRateMax = Math.max(5, Number(process.env.CHECKOUT_RATE_MAX) || 30);
-const uploadMaxFileSizeMb = Math.max(1, Number(process.env.UPLOAD_MAX_FILE_SIZE_MB) || 5);
+const uploadMaxFileSizeMb = Math.max(1, Number(process.env.UPLOAD_MAX_FILE_SIZE_MB) || 12);
 const uploadMaxFileSizeBytes = uploadMaxFileSizeMb * 1024 * 1024;
 const maxInflightRequests = Math.max(50, Number(process.env.MAX_INFLIGHT_REQUESTS) || 800);
 const cartSessionCookieName = process.env.CART_SESSION_COOKIE || "live_shop_sid";
@@ -119,14 +119,6 @@ const checkoutLimiter = rateLimit({
 app.use((err, req, res, next) => {
     if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
         return res.status(400).json({ error: "Dữ liệu JSON không hợp lệ" });
-    }
-
-    if (err instanceof multer.MulterError) {
-        if (err.code === "LIMIT_FILE_SIZE") {
-            return res.status(413).json({ error: "Ảnh quá lớn, vui lòng chọn file nhỏ hơn" });
-        }
-
-        return res.status(400).json({ error: "Upload không hợp lệ" });
     }
 
     next(err);
@@ -2062,23 +2054,37 @@ app.delete("/product/:id", (req, res) => {
 
 app.post("/upload",
 
-upload.single("image"),
-
 (req, res) => {
 
-    if (!req.file) {
+    upload.single("image")(req, res, (err) => {
 
-        return res.status(400).json({
+        if (err instanceof multer.MulterError) {
+            if (err.code === "LIMIT_FILE_SIZE") {
+                return res.status(413).json({ error: `Ảnh quá lớn, vui lòng chọn file nhỏ hơn ${uploadMaxFileSizeMb}MB` });
+            }
 
-            error: "Không có ảnh"
+            return res.status(400).json({ error: "Upload không hợp lệ" });
+        }
+
+        if (err) {
+            return res.status(500).json({ error: "Lỗi upload ảnh, vui lòng thử lại" });
+        }
+
+        if (!req.file) {
+
+            return res.status(400).json({
+
+                error: "Không có ảnh"
+
+            });
+
+        }
+
+        res.json({
+
+            url: "/uploads/" + req.file.filename
 
         });
-
-    }
-
-    res.json({
-
-        url: "/uploads/" + req.file.filename
 
     });
 
