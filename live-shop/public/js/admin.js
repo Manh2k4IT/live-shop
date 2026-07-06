@@ -98,7 +98,7 @@ function renderVariantRows() {
     return `
       <div class="variant-row" data-row-id="${row.id}">
         <div class="variant-row-image-col">
-          <img class="variant-image-preview" data-object-url="${isObjectUrl}" src="${previewUrl}" alt="Ảnh màu ${index + 1}" />
+          <img class="variant-image-preview" data-object-url="${isObjectUrl}" src="${previewUrl}" alt="Ảnh màu ${index + 1}" loading="lazy" decoding="async" />
           <input type="file" class="variant-file-input" accept="image/*" onchange="onVariantFileChange('${row.id}', this)" />
         </div>
         <div class="variant-row-name-col">
@@ -584,7 +584,7 @@ async function load() {
           <td class="drag-cell">
             <span class="drag-handle" data-product-id="${p.id}" title="Giữ và kéo để đổi thứ tự">☰</span>
           </td>
-          <td><img src="${p.image || "https://placehold.co/80x80?text=No+Image"}" width="60" height="60" style="object-fit:cover"></td>
+          <td><img src="${p.image || "https://placehold.co/80x80?text=No+Image"}" width="60" height="60" loading="lazy" decoding="async" style="object-fit:cover"></td>
           <td class="product-name-cell">
             <div class="product-name-wrap">
               <span class="product-title">${p.name}</span>

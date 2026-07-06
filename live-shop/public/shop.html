@@ -1781,7 +1781,7 @@
               ${products.map((p) => `
                 <div class="product-card">
                   <div class="product-image-wrap">
-                    <img class="product-main-image" src="${getSelectedImageForProduct(p.id) || p.image || "https://placehold.co/300x220?text=No+Image"}" alt="${p.name}" />
+                    <img class="product-main-image" src="${getSelectedImageForProduct(p.id) || p.image || "https://placehold.co/300x220?text=No+Image"}" alt="${p.name}" loading="lazy" decoding="async" />
                     <button class="category-cart-btn" onclick="openCategoryPage('${category.replace(/'/g, "\\'")}')">${category}</button>
                   </div>
                   <div class="product-name">${p.name}</div>
@@ -2007,7 +2007,7 @@
           <div class="popup-product-card ${isEditor ? "is-editor" : "is-summary"}" data-product-id="${item.id}" data-variant-key="${String(item.variantKey || "default").replace(/"/g, "&quot;")}" data-size-key="${String(item.sizeKey || "size:default").replace(/"/g, "&quot;")}" data-item-key="${String(item.itemKey || "").replace(/"/g, "&quot;")}" data-item-qty="${item.qty}" data-item-category="${String(item.category || "").replace(/"/g, "&quot;")}" data-variant-name="${String(selectedVariantName || "").replace(/"/g, "&quot;")}" data-selected-size="${String(finalSelectedSize || "").replace(/"/g, "&quot;")}" data-combo-stock="${comboStock}">
             <button class="popup-remove" onclick='removeItemPopup(${item.id}, ${JSON.stringify(item.variantKey || "default")}, ${JSON.stringify(item.sizeKey || "size:default")}, ${JSON.stringify(item.itemKey || "")})' title="Bỏ sản phẩm này">✕</button>
             <div class="popup-product-head">
-              <img class="popup-product-image" src="${selectedVariantImage}" alt="${item.name}" />
+              <img class="popup-product-image" src="${selectedVariantImage}" alt="${item.name}" loading="lazy" decoding="async" />
               <div>
                 <div class="popup-price-wrap">
                   ${discountPercent > 0 ? `<span class="popup-discount-badge">-${discountPercent}%</span>` : ""}
@@ -2044,7 +2044,7 @@
                     title="${isOut ? `${getVariantDisplayName(product || item, index, img)} - Đã hết hàng` : getVariantDisplayName(product || item, index, img)}"
                   >
                     <div class="popup-variant-image-wrap">
-                      <img src="${img}" alt="${getVariantDisplayName(product || item, index, img)}" />
+                      <img src="${img}" alt="${getVariantDisplayName(product || item, index, img)}" loading="lazy" decoding="async" />
                       ${isOut ? '<span class="popup-variant-soldout">Đã hết hàng</span>' : ""}
                     </div>
                     <span class="popup-variant-label">${getVariantDisplayName(product || item, index, img)}</span>
@@ -2299,7 +2299,7 @@
                 : Math.max(0, Math.floor(Number(product?.stock ?? item.stock ?? 0) || 0));
               return `
                 <div class="cart-card">
-                  <img src="${item.image || "https://placehold.co/80x80?text=No+Image"}" alt="${item.name}" />
+                  <img src="${item.image || "https://placehold.co/80x80?text=No+Image"}" alt="${item.name}" loading="lazy" decoding="async" />
                   <div class="cart-info">
                     <div class="cart-name">${item.name}</div>
                     ${item.variantName ? `<div class="cart-qty">Màu: ${item.variantName}</div>` : ""}

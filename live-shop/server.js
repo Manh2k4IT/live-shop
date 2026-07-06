@@ -8,6 +8,13 @@ const { rateLimit } = require("express-rate-limit");
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
+let sharp = null;
+
+try {
+    sharp = require("sharp");
+} catch (error) {
+    sharp = null;
+}
 
 const app = express();
 
@@ -19,6 +26,11 @@ const checkoutRateWindowMs = Math.max(1000, Number(process.env.CHECKOUT_RATE_WIN
 const checkoutRateMax = Math.max(5, Number(process.env.CHECKOUT_RATE_MAX) || 30);
 const uploadMaxFileSizeMb = Math.max(1, Number(process.env.UPLOAD_MAX_FILE_SIZE_MB) || 12);
 const uploadMaxFileSizeBytes = uploadMaxFileSizeMb * 1024 * 1024;
+const imageOptimizeEnabled = String(process.env.IMAGE_OPTIMIZE_ENABLED || "true").toLowerCase() !== "false";
+const imageMaxWidthPx = Math.max(640, Number(process.env.IMAGE_MAX_WIDTH_PX) || 1600);
+const imageQuality = Math.min(95, Math.max(50, Number(process.env.IMAGE_QUALITY) || 82));
+const imageOptimizeMinBytes = Math.max(50 * 1024, Number(process.env.IMAGE_OPTIMIZE_MIN_BYTES) || (300 * 1024));
+const uploadsCacheMaxAgeSec = Math.max(60, Number(process.env.UPLOADS_CACHE_MAX_AGE_SEC) || (30 * 24 * 60 * 60));
 const maxInflightRequests = Math.max(50, Number(process.env.MAX_INFLIGHT_REQUESTS) || 800);
 const cartSessionCookieName = process.env.CART_SESSION_COOKIE || "live_shop_sid";
 const cartSessionMaxAgeMs = Math.max(60_000, Number(process.env.CART_SESSION_MAX_AGE_MS) || (30 * 24 * 60 * 60 * 1000));
@@ -136,7 +148,90 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-app.use("/uploads", express.static(uploadDir));
+app.use("/uploads", express.static(uploadDir, {
+    maxAge: uploadsCacheMaxAgeSec * 1000,
+    immutable: true,
+    etag: true
+}));
+
+const OPTIMIZABLE_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+
+async function optimizeImageFile(filePath) {
+    if (!imageOptimizeEnabled || !sharp) return { optimized: false, reason: "disabled" };
+
+    const extension = path.extname(String(filePath || "")).toLowerCase();
+    if (!OPTIMIZABLE_IMAGE_EXTENSIONS.has(extension)) return { optimized: false, reason: "unsupported" };
+
+    const sourceStats = await fs.promises.stat(filePath);
+    if (!sourceStats || sourceStats.size < imageOptimizeMinBytes) {
+        return { optimized: false, reason: "too-small" };
+    }
+
+    const tempPath = `${filePath}.optimized`;
+    const pipeline = sharp(filePath, { failOn: "none" })
+        .rotate()
+        .resize({
+            width: imageMaxWidthPx,
+            withoutEnlargement: true,
+            fit: "inside"
+        });
+
+    if (extension === ".png") {
+        pipeline.png({ compressionLevel: 9, adaptiveFiltering: true });
+    } else if (extension === ".webp") {
+        pipeline.webp({ quality: imageQuality, effort: 4 });
+    } else {
+        pipeline.jpeg({ quality: imageQuality, mozjpeg: true, progressive: true });
+    }
+
+    await pipeline.toFile(tempPath);
+
+    const optimizedStats = await fs.promises.stat(tempPath);
+    const shouldReplace = optimizedStats.size < sourceStats.size * 0.98;
+
+    if (!shouldReplace) {
+        await fs.promises.unlink(tempPath).catch(() => {});
+        return { optimized: false, reason: "no-gain" };
+    }
+
+    await fs.promises.copyFile(tempPath, filePath);
+    await fs.promises.unlink(tempPath).catch(() => {});
+    return { optimized: true, beforeBytes: sourceStats.size, afterBytes: optimizedStats.size };
+}
+
+async function optimizeExistingUploadsInBackground() {
+    if (!imageOptimizeEnabled || !sharp) return;
+
+    let optimizedCount = 0;
+    let totalSavedBytes = 0;
+
+    try {
+        const entries = await fs.promises.readdir(uploadDir, { withFileTypes: true });
+
+        for (const entry of entries) {
+            if (!entry.isFile()) continue;
+            const filePath = path.join(uploadDir, entry.name);
+
+            try {
+                const result = await optimizeImageFile(filePath);
+                if (result.optimized) {
+                    optimizedCount += 1;
+                    totalSavedBytes += Math.max(0, Number(result.beforeBytes || 0) - Number(result.afterBytes || 0));
+                }
+            } catch (error) {
+                // Skip invalid/corrupted files; do not interrupt server.
+            }
+        }
+    } catch (error) {
+        console.warn("Không thể tối ưu ảnh upload nền:", error.message);
+        return;
+    }
+
+    if (optimizedCount > 0) {
+        const savedMb = (totalSavedBytes / (1024 * 1024)).toFixed(2);
+        console.log(`Đã tối ưu ${optimizedCount} ảnh upload, giảm khoảng ${savedMb}MB.`);
+    }
+}
 
 /* ===========================
    HTTP + Socket
@@ -2056,7 +2151,7 @@ app.post("/upload",
 
 (req, res) => {
 
-    upload.single("image")(req, res, (err) => {
+    upload.single("image")(req, res, async (err) => {
 
         if (err instanceof multer.MulterError) {
             if (err.code === "LIMIT_FILE_SIZE") {
@@ -2078,6 +2173,12 @@ app.post("/upload",
 
             });
 
+        }
+
+        try {
+            await optimizeImageFile(req.file.path);
+        } catch (optimizationError) {
+            console.warn("Không thể tối ưu ảnh vừa upload:", optimizationError.message);
         }
 
         res.json({
@@ -2518,3 +2619,8 @@ process.on("uncaughtException", (error) => {
 });
 
 startServer(currentPort);
+setImmediate(() => {
+    optimizeExistingUploadsInBackground().catch((error) => {
+        console.warn("Tối ưu ảnh nền thất bại:", error.message);
+    });
+});
