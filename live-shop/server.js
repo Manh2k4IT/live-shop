@@ -7,6 +7,7 @@ const compression = require("compression");
 const { rateLimit } = require("express-rate-limit");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 
 const app = express();
 
@@ -19,6 +20,8 @@ const checkoutRateMax = Math.max(5, Number(process.env.CHECKOUT_RATE_MAX) || 30)
 const uploadMaxFileSizeMb = Math.max(1, Number(process.env.UPLOAD_MAX_FILE_SIZE_MB) || 5);
 const uploadMaxFileSizeBytes = uploadMaxFileSizeMb * 1024 * 1024;
 const maxInflightRequests = Math.max(50, Number(process.env.MAX_INFLIGHT_REQUESTS) || 800);
+const cartSessionCookieName = process.env.CART_SESSION_COOKIE || "live_shop_sid";
+const cartSessionMaxAgeMs = Math.max(60_000, Number(process.env.CART_SESSION_MAX_AGE_MS) || (30 * 24 * 60 * 60 * 1000));
 let inflightRequests = 0;
 
 app.set("trust proxy", 1);
@@ -44,6 +47,54 @@ app.use((req, res, next) => {
 
     res.on("finish", release);
     res.on("close", release);
+    next();
+});
+
+function parseCookieHeader(headerValue) {
+    const source = String(headerValue || "");
+    if (!source) return {};
+
+    return source.split(";").reduce((acc, pair) => {
+        const [rawKey, ...rest] = pair.split("=");
+        const key = String(rawKey || "").trim();
+        if (!key) return acc;
+        acc[key] = decodeURIComponent(rest.join("=") || "");
+        return acc;
+    }, {});
+}
+
+function createSessionId() {
+    if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+    return crypto.randomBytes(16).toString("hex");
+}
+
+function normalizeSessionId(value) {
+    const sid = String(value || "").trim();
+    if (!sid) return "";
+    if (!/^[a-zA-Z0-9_-]{8,80}$/.test(sid)) return "";
+    return sid;
+}
+
+app.use((req, res, next) => {
+    const cookies = parseCookieHeader(req.headers.cookie);
+    let sessionId = normalizeSessionId(cookies[cartSessionCookieName]);
+
+    if (!sessionId) {
+        sessionId = createSessionId().replace(/[^a-zA-Z0-9_-]/g, "");
+        const isSecure = Boolean(req.secure || String(req.headers["x-forwarded-proto"] || "").toLowerCase() === "https");
+        const cookieParts = [
+            `${cartSessionCookieName}=${encodeURIComponent(sessionId)}`,
+            "Path=/",
+            `Max-Age=${Math.floor(cartSessionMaxAgeMs / 1000)}`,
+            "HttpOnly",
+            "SameSite=Lax"
+        ];
+
+        if (isSecure) cookieParts.push("Secure");
+        res.setHeader("Set-Cookie", cookieParts.join("; "));
+    }
+
+    req.sessionId = sessionId;
     next();
 });
 
@@ -262,6 +313,22 @@ let persistRetryRequested = false;
 let broadcastTimer = null;
 let pendingBroadcastRevision = 0;
 
+function normalizeCartItemRecord(item) {
+
+    if (!item || typeof item !== "object") return null;
+
+    const sessionId = normalizeSessionId(item.sessionId) || "legacy";
+    const updatedAtValue = Number(item.updatedAt);
+    const updatedAt = Number.isFinite(updatedAtValue) && updatedAtValue > 0 ? Math.floor(updatedAtValue) : Date.now();
+
+    return {
+        ...item,
+        sessionId,
+        updatedAt
+    };
+
+}
+
 function rebuildProductsIndex() {
 
     productsById = new Map(products.map((product) => [Number(product.id), product]));
@@ -399,7 +466,10 @@ function reconcileCartStockForProduct(productId) {
             return;
         }
 
-        const existing = mergedByItemKey.get(normalizedItemKey);
+        const sessionId = normalizeSessionId(item.sessionId) || "legacy";
+        const mergedKey = `${sessionId}::${normalizedItemKey}`;
+
+        const existing = mergedByItemKey.get(mergedKey);
         if (existing) {
             existing.qty += cappedQty;
             existing.__stockCap = Math.max(existing.__stockCap, stockCap);
@@ -417,8 +487,9 @@ function reconcileCartStockForProduct(productId) {
             changed = true;
         }
 
-        mergedByItemKey.set(normalizedItemKey, {
+        mergedByItemKey.set(mergedKey, {
             ...item,
+            sessionId,
             image: normalizedImage,
             variantName: normalizedVariantName,
             variantKey: normalizedVariantKey,
@@ -1031,9 +1102,10 @@ function getNextCategorySortOrder(category) {
 
 }
 
-function getSortedCart(category = "") {
+function getSortedCart(category = "", sessionId = "") {
 
     const normalizedCategory = normalizeCategoryName(category);
+    const normalizedSessionId = normalizeSessionId(sessionId);
 
     const orderedProducts = (normalizedCategory ? getOrderedProductsByCategory(normalizedCategory) : getOrderedProducts()).filter(product => {
 
@@ -1051,6 +1123,7 @@ function getSortedCart(category = "") {
 
     return [...cart]
         .filter(item => {
+            if (normalizedSessionId && normalizeSessionId(item.sessionId) !== normalizedSessionId) return false;
 
             const product = findProductById(item.id);
             if (!product) return false;
@@ -1198,7 +1271,9 @@ function loadPersistedState() {
         const parsed = JSON.parse(raw || "{}");
 
         products = Array.isArray(parsed.products) ? parsed.products : cloneData(DEFAULT_PRODUCTS);
-        cart = Array.isArray(parsed.cart) ? parsed.cart : [];
+        cart = Array.isArray(parsed.cart)
+            ? parsed.cart.map(normalizeCartItemRecord).filter(Boolean)
+            : [];
         orders = Array.isArray(parsed.orders) ? parsed.orders : cloneData(DEFAULT_ORDERS);
         appSettings = (parsed.settings && typeof parsed.settings === "object")
             ? {
@@ -1381,9 +1456,10 @@ app.post("/checkout", (req, res) => {
 
     const { customer, phone, address } = req.body;
     const category = getRequestedCategory(req);
+    const sessionId = normalizeSessionId(req.sessionId);
     const checkoutItems = category
-        ? cart.filter(item => normalizeCategoryName(item.category) === category)
-        : cart;
+        ? cart.filter(item => normalizeSessionId(item.sessionId) === sessionId && normalizeCategoryName(item.category) === category)
+        : cart.filter(item => normalizeSessionId(item.sessionId) === sessionId);
 
     if (!customer || !phone || !address) {
 
@@ -1450,9 +1526,9 @@ app.post("/checkout", (req, res) => {
 
     orders.unshift(newOrder);
     if (category) {
-        cart = cart.filter(item => normalizeCategoryName(item.category) !== category);
+        cart = cart.filter(item => !(normalizeSessionId(item.sessionId) === sessionId && normalizeCategoryName(item.category) === category));
     } else {
-        cart = [];
+        cart = cart.filter(item => normalizeSessionId(item.sessionId) !== sessionId);
     }
     updateClient();
 
@@ -2013,7 +2089,7 @@ upload.single("image"),
 =========================== */
 
 app.get("/cart", (req, res) => {
-    res.json(getSortedCart(getRequestedCategory(req)));
+    res.json(getSortedCart(getRequestedCategory(req), req.sessionId));
 
 });
 
@@ -2029,6 +2105,7 @@ app.post("/add", (req, res) => {
 
     } = req.body;
     const requestedCategory = getRequestedCategory(req);
+    const sessionId = normalizeSessionId(req.sessionId);
 
     const product = findProductById(
 
@@ -2091,6 +2168,7 @@ app.post("/add", (req, res) => {
     const item = cart.find(
 
         x => x.id == id
+            && normalizeSessionId(x.sessionId) === sessionId
             && normalizeCategoryName(x.category || productCategory) === productCategory
             && String(x.itemKey || buildCartItemKey(x.variantKey || "default", x.sizeKey || "size:default")) === effectiveItemKey
 
@@ -2121,6 +2199,8 @@ app.post("/add", (req, res) => {
         item.selectedSize = effectiveSize;
         item.sizeKey = effectiveSizeKey;
         item.itemKey = effectiveItemKey;
+        item.sessionId = sessionId;
+        item.updatedAt = Date.now();
 
     } else {
 
@@ -2141,6 +2221,8 @@ app.post("/add", (req, res) => {
             selectedSize: effectiveSize,
             sizeKey: effectiveSizeKey,
             itemKey: effectiveItemKey,
+            sessionId,
+            updatedAt: Date.now(),
 
             qty: 1
 
@@ -2184,6 +2266,7 @@ app.post("/change", (req, res) => {
 
     } = req.body;
     const requestedCategory = getRequestedCategory(req);
+    const sessionId = normalizeSessionId(req.sessionId);
 
     const product = findProductById(id);
 
@@ -2215,6 +2298,7 @@ app.post("/change", (req, res) => {
 
     const item = cart.find((x) => {
         if (!(x.id == id)) return false;
+        if (normalizeSessionId(x.sessionId) !== sessionId) return false;
         if (normalizeCategoryName(x.category || productCategory) !== productCategory) return false;
 
         if (matchedItemKey) {
@@ -2282,6 +2366,7 @@ app.post("/change", (req, res) => {
         const duplicateItem = cart.find((x) => {
             if (x === item) return false;
             if (!(x.id == id)) return false;
+            if (normalizeSessionId(x.sessionId) !== sessionId) return false;
             if (normalizeCategoryName(x.category || productCategory) !== productCategory) return false;
             return String(x.itemKey || buildCartItemKey(x.variantKey || "default", x.sizeKey || "size:default")) === nextItemKey;
         });
@@ -2300,6 +2385,7 @@ app.post("/change", (req, res) => {
             duplicateItem.selectedSize = nextSize;
             duplicateItem.sizeKey = nextSizeKey;
             duplicateItem.itemKey = nextItemKey;
+            duplicateItem.updatedAt = Date.now();
             cart = cart.filter((x) => x !== item);
 
             updateClient();
@@ -2314,6 +2400,7 @@ app.post("/change", (req, res) => {
     item.sizeKey = nextSizeKey;
     item.itemKey = nextItemKey;
     item.qty = newQty;
+    item.updatedAt = Date.now();
 
     if (item.qty <= 0) {
 

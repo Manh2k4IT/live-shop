@@ -2405,6 +2405,7 @@
 
     if (!socket) {
       setInterval(() => {
+        if (document.hidden) return;
         const focusState = getCheckoutFocusState();
         if (focusState) return;
         refreshRealtimeData();

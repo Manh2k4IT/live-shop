@@ -59,6 +59,8 @@ Co the doi bang bien moi truong khi deploy.
 - `UPLOAD_MAX_FILE_SIZE_MB`: gioi han kich thuoc file upload
 - `KEEP_ALIVE_TIMEOUT_MS`, `HEADERS_TIMEOUT_MS`, `REQUEST_TIMEOUT_MS`: timeout HTTP server
 - `SOCKET_PING_INTERVAL_MS`, `SOCKET_PING_TIMEOUT_MS`, `SOCKET_MAX_BUFFER_BYTES`: timeout/bo nho Socket.IO
+- `CART_SESSION_COOKIE`: ten cookie de tach gio hang theo tung nguoi dung
+- `CART_SESSION_MAX_AGE_MS`: thoi gian ton tai cookie gio hang
 
 ## On dinh khi dong nguoi
 
@@ -71,6 +73,7 @@ Co the doi bang bien moi truong khi deploy.
    - Response duoc nen de giam bandwidth va CPU spike do payload lon.
    - Upload duoc gioi han dung luong de tranh ngop RAM/disk.
    - Shutdown an toan: flush state truoc khi process tat.
+   - Gio hang da tach theo session cookie de tranh nguoi dung bi dung chung cart khi tai cao.
 
 - Goi y khi tai cao (vai tram user cung luc):
    - Tang server instance (neu platform cho scale).
