@@ -3,9 +3,31 @@ const API = window.location.origin && window.location.origin !== "null"
   : "http://localhost:3000";
 const state = { products: [], orders: [] };
 const DEFAULT_SHOP_LOGO = "/uploads/logogusa.jpg";
+const DEFAULT_PUBLIC_SHOP_URL = "https://shop.gusa.vn";
 let productSortable = null;
 const PRODUCT_CATEGORIES = ["Áo", "Quần", "Chân váy", "Đầm", "Khác"];
 let variantRowsData = [];
+let shopPublicUrl = DEFAULT_PUBLIC_SHOP_URL;
+
+function sanitizeOrigin(input) {
+  const raw = String(input || "").trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    return `${url.protocol}//${url.host}`;
+  } catch (error) {
+    return "";
+  }
+}
+
+function getShopBaseOrigin() {
+  const host = String(window.location.hostname || "").toLowerCase();
+  if (host === "localhost" || host === "127.0.0.1") {
+    return window.location.origin;
+  }
+
+  return sanitizeOrigin(shopPublicUrl) || window.location.origin;
+}
 
 function parseColorStockInput(value) {
   const qty = Number(String(value || "").trim());
@@ -180,13 +202,17 @@ function normalizeCategoryKey(value) {
 
 function getShopCategoryUrl(category) {
   const normalized = String(category || "").trim();
-  return normalized ? `/shop.html?category=${encodeURIComponent(normalized)}` : "/shop.html";
+  const base = getShopBaseOrigin();
+  return normalized
+    ? `${base}/shop.html?category=${encodeURIComponent(normalized)}`
+    : `${base}/shop.html`;
 }
 
 function getProductShopUrl(product) {
   const id = Number(product?.id);
-  if (!Number.isFinite(id)) return "/shop.html";
-  return `/shop.html?productId=${encodeURIComponent(String(id))}`;
+  const base = getShopBaseOrigin();
+  if (!Number.isFinite(id)) return `${base}/shop.html`;
+  return `${base}/shop.html?productId=${encodeURIComponent(String(id))}`;
 }
 
 function updateCategoryNavActive() {
@@ -280,6 +306,7 @@ async function loadBrandSettings() {
     const data = await res.json();
     if (!res.ok) return;
     applyBrandLogo(data.shopLogo);
+    shopPublicUrl = sanitizeOrigin(data.shopPublicUrl) || DEFAULT_PUBLIC_SHOP_URL;
   } catch (error) {
     applyBrandLogo(DEFAULT_SHOP_LOGO);
   }
