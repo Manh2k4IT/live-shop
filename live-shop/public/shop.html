@@ -1769,45 +1769,39 @@
       }
 
       const groups = groupItemsByCategory(data);
-      const categories = category
-        ? (groups.has(category) ? [category] : [])
-        : getOrderedCategories(data);
+      const displayProducts = category
+        ? (groups.get(category) || [])
+        : getOrderedCategories(data).flatMap((cat) => groups.get(cat) || []);
 
-      const html = categories.map((category) => {
-        const products = groups.get(category) || [];
+      const html = displayProducts.map((p) => {
+        const productCategory = normalizeCategory(p.category);
         return `
-          <section class="category-section">
-            <div class="product-grid">
-              ${products.map((p) => `
-                <div class="product-card">
-                  <div class="product-image-wrap">
-                    <img class="product-main-image" src="${getSelectedImageForProduct(p.id) || p.image || "https://placehold.co/300x220?text=No+Image"}" alt="${p.name}" loading="lazy" decoding="async" />
-                    <button class="category-cart-btn" onclick="openCategoryPage('${category.replace(/'/g, "\\'")}')">${category}</button>
-                  </div>
-                  <div class="product-name">${p.name}</div>
-                  <div class="product-meta product-sku">SKU: ${p.sku || "—"}</div>
-                  <div class="product-meta product-stock">Tồn kho: ${p.stock}</div>
-                  <div class="price-row">
-                    <div class="price-block">
-                      <span class="price">${Number(p.price || 0).toLocaleString()}đ</span>
-                      ${p.oldPrice ? `<span class="price-old">${Number(p.oldPrice).toLocaleString()}đ</span>` : ""}
-                    </div>
-                    <div class="product-actions">
-                      <button class="btn btn-primary" onclick="add(${p.id})">+ Thêm</button>
-                      <button class="btn btn-danger" onclick="orderNow(${p.id})">Đặt hàng</button>
-                    </div>
-                  </div>
-                </div>
-              `).join("")}
+          <div class="product-card">
+            <div class="product-image-wrap">
+              <img class="product-main-image" src="${getSelectedImageForProduct(p.id) || p.image || "https://placehold.co/300x220?text=No+Image"}" alt="${p.name}" loading="lazy" decoding="async" />
+              <button class="category-cart-btn" onclick="openCategoryPage('${productCategory.replace(/'/g, "\\'")}')">${productCategory}</button>
             </div>
-          </section>
+            <div class="product-name">${p.name}</div>
+            <div class="product-meta product-sku">SKU: ${p.sku || "—"}</div>
+            <div class="product-meta product-stock">Tồn kho: ${p.stock}</div>
+            <div class="price-row">
+              <div class="price-block">
+                <span class="price">${Number(p.price || 0).toLocaleString()}đ</span>
+                ${p.oldPrice ? `<span class="price-old">${Number(p.oldPrice).toLocaleString()}đ</span>` : ""}
+              </div>
+              <div class="product-actions">
+                <button class="btn btn-primary" onclick="add(${p.id})">+ Thêm</button>
+                <button class="btn btn-danger" onclick="orderNow(${p.id})">Đặt hàng</button>
+              </div>
+            </div>
+          </div>
         `;
       }).join("");
 
       const list = document.getElementById("list");
       if (!list) return;
 
-      list.className = category ? "product-grid" : "product-grid category-list";
+      list.className = "product-grid";
       list.innerHTML = html || `<div class="empty">${category ? `Danh mục ${category} đang trống` : "Chưa có sản phẩm nào"}</div>`;
     }
 
