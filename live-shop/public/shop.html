@@ -1768,10 +1768,7 @@
         if (descEl) descEl.textContent = `Đang mở danh mục ${category}`;
       }
 
-      const groups = groupItemsByCategory(data);
-      const displayProducts = category
-        ? (groups.get(category) || [])
-        : getOrderedCategories(data).flatMap((cat) => groups.get(cat) || []);
+      const displayProducts = Array.isArray(data) ? data : [];
 
       const html = displayProducts.map((p) => {
         const productCategory = normalizeCategory(p.category);
