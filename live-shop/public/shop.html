@@ -1609,6 +1609,13 @@
       return category.trim();
     }
 
+    function getRequestedProductId() {
+      const raw = new URLSearchParams(window.location.search).get("productId") || "";
+      const id = Number(raw);
+      if (!Number.isFinite(id) || id <= 0) return null;
+      return Math.floor(id);
+    }
+
     function getCategoryProductsUrl() {
       const category = getCurrentCategory();
       return category ? `${API}/products?category=${encodeURIComponent(category)}` : `${API}/products`;
@@ -1760,19 +1767,35 @@
       await loadShopSettings(forceSettings);
 
       const category = getCurrentCategory();
+      const requestedProductId = getRequestedProductId();
       const res = await fetch(getCategoryProductsUrl());
       const data = await res.json();
       productsById = new Map(data.map((item) => [Number(item.id), item]));
       lastProductsSyncAt = Date.now();
 
-      if (category) {
-        const titleEl = document.getElementById("productsHeaderTitle");
-        const descEl = document.getElementById("productsHeaderDesc");
+      const titleEl = document.getElementById("productsHeaderTitle");
+      const descEl = document.getElementById("productsHeaderDesc");
+
+      if (requestedProductId) {
+        const selectedProduct = (Array.isArray(data) ? data : []).find((item) => Number(item.id) === requestedProductId);
+        if (titleEl) titleEl.textContent = "🛍 SẢN PHẨM";
+        if (descEl) {
+          descEl.textContent = selectedProduct
+            ? `Đang xem riêng: ${selectedProduct.name || "Sản phẩm"}`
+            : "Không tìm thấy sản phẩm theo link này";
+        }
+      } else if (category) {
         if (titleEl) titleEl.textContent = `🛍 ${category}`;
         if (descEl) descEl.textContent = `Đang mở danh mục ${category}`;
+      } else {
+        if (titleEl) titleEl.textContent = "🛍 SẢN PHẨM";
+        if (descEl) descEl.textContent = "Gusa – Nâng tầm phong cách với thời trang Linen.";
       }
 
-      const displayProducts = Array.isArray(data) ? data : [];
+      const sourceProducts = Array.isArray(data) ? data : [];
+      const displayProducts = requestedProductId
+        ? sourceProducts.filter((item) => Number(item.id) === requestedProductId)
+        : sourceProducts;
 
       const html = displayProducts.map((p) => {
         const productCategory = normalizeCategory(p.category);

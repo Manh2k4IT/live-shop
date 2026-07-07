@@ -183,6 +183,12 @@ function getShopCategoryUrl(category) {
   return normalized ? `/shop.html?category=${encodeURIComponent(normalized)}` : "/shop.html";
 }
 
+function getProductShopUrl(product) {
+  const id = Number(product?.id);
+  if (!Number.isFinite(id)) return "/shop.html";
+  return `/shop.html?productId=${encodeURIComponent(String(id))}`;
+}
+
 function updateCategoryNavActive() {
   const currentCategory = getAdminCategory();
 
@@ -608,6 +614,7 @@ async function load() {
           <td>${status}</td>
           <td>
             <div class="action">
+              <a class="edit" href="${getProductShopUrl(p)}" target="_blank" rel="noopener noreferrer" title="Mở link riêng sản phẩm">🔗</a>
               <button class="toggle-visibility ${isHidden ? "show" : "hide"}" onclick="toggleProductVisibility(${p.id})" title="${isHidden ? "Hiện sản phẩm" : "Ẩn sản phẩm"}">${isHidden ? "👁️" : "🙈"}</button>
               <button class="edit" onclick="editProduct(${p.id})" title="Sửa sản phẩm">✏️</button>
               <button class="delete" onclick="deleteProduct(${p.id})" title="Xóa sản phẩm">🗑️</button>
