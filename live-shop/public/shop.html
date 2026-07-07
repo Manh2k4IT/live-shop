@@ -2414,6 +2414,10 @@
         return;
       }
 
+      if (data.message) {
+        showToast(data.message, "success");
+      }
+
       showOrderSuccessModal();
       document.getElementById("customerName").value = "";
       document.getElementById("customerPhone").value = "";

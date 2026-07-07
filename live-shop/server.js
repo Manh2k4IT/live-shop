@@ -1565,13 +1565,18 @@ app.post("/checkout", (req, res) => {
 
     }
 
+    const validItems = [];
+    let skippedItems = 0;
+    let adjustedItems = 0;
+
     for (const item of checkoutItems) {
 
         const product = findProductById(item.id);
 
         if (!product) {
 
-            return res.status(400).json({ error: `Sản phẩm ${item.name} không còn tồn tại` });
+            skippedItems += 1;
+            continue;
 
         }
 
@@ -1581,17 +1586,42 @@ app.post("/checkout", (req, res) => {
         const itemSize = resolveSelectedSizeByVariant(product, itemVariantIndex, item.selectedSize || "");
         const stockInfo = getVariantStockInfo(product, itemVariantIndex, itemSize);
 
-        if (stockInfo.stock < item.qty) {
+        if (stockInfo.stock <= 0) {
 
-            return res.status(400).json({ error: `Sản phẩm ${item.name} không đủ tồn kho` });
+            skippedItems += 1;
+            continue;
 
         }
 
-        decrementVariantStock(product, itemVariantIndex, itemSize, item.qty);
+        const safeQty = Math.min(item.qty, stockInfo.stock);
+        if (safeQty !== item.qty) {
+            adjustedItems += 1;
+        }
+
+        validItems.push({
+            ...item,
+            qty: safeQty,
+            selectedSize: itemSize
+        });
+
+        decrementVariantStock(product, itemVariantIndex, itemSize, safeQty);
 
     }
 
-    const total = checkoutItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+    if (!validItems.length) {
+        if (category) {
+            cart = cart.filter(item => !(normalizeSessionId(item.sessionId) === sessionId && normalizeCategoryName(item.category) === category));
+        } else {
+            cart = cart.filter(item => normalizeSessionId(item.sessionId) !== sessionId);
+        }
+        updateClient();
+
+        return res.status(400).json({
+            error: skippedItems ? "Giỏ hàng không còn sản phẩm đủ tồn kho" : "Giỏ hàng trống"
+        });
+    }
+
+    const total = validItems.reduce((sum, item) => sum + item.price * item.qty, 0);
 
     const newOrder = {
 
@@ -1605,7 +1635,7 @@ app.post("/checkout", (req, res) => {
         total,
         status: "pending",
         createdAt: new Date().toISOString(),
-        items: checkoutItems.map(item => ({
+        items: validItems.map(item => ({
             name: item.name,
             qty: item.qty,
             sku: item.sku || "",
@@ -1624,7 +1654,14 @@ app.post("/checkout", (req, res) => {
     }
     updateClient();
 
-    res.json(newOrder);
+    res.json({
+        ...newOrder,
+        skippedItems,
+        adjustedItems,
+        message: skippedItems || adjustedItems
+            ? `Đã bỏ qua ${skippedItems} sản phẩm hết hàng${adjustedItems ? ` và tự điều chỉnh ${adjustedItems} sản phẩm vượt tồn` : ""}`
+            : ""
+    });
 
 });
 
