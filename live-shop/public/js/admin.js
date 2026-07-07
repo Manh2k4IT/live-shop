@@ -614,7 +614,7 @@ async function load() {
           <td>${status}</td>
           <td>
             <div class="action">
-              <a class="edit" href="${getProductShopUrl(p)}" target="_blank" rel="noopener noreferrer" title="Mở link riêng sản phẩm">🔗</a>
+              <a class="product-link-btn" href="${getProductShopUrl(p)}" target="_blank" rel="noopener noreferrer" title="Mở link riêng sản phẩm">🔗</a>
               <button class="toggle-visibility ${isHidden ? "show" : "hide"}" onclick="toggleProductVisibility(${p.id})" title="${isHidden ? "Hiện sản phẩm" : "Ẩn sản phẩm"}">${isHidden ? "👁️" : "🙈"}</button>
               <button class="edit" onclick="editProduct(${p.id})" title="Sửa sản phẩm">✏️</button>
               <button class="delete" onclick="deleteProduct(${p.id})" title="Xóa sản phẩm">🗑️</button>

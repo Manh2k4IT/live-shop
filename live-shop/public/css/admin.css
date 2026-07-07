@@ -633,6 +633,40 @@ td img{
 
 }
 
+.product-link-btn{
+
+    background:linear-gradient(135deg, #0ea5a4, #0f766e);
+
+    color:white;
+
+    width:38px;
+
+    height:38px;
+
+    border-radius:10px;
+
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    text-decoration:none;
+
+    font-size:17px;
+
+    box-shadow:0 4px 10px rgba(15,118,110,.25);
+
+}
+
+.product-link-btn:hover{
+
+    background:linear-gradient(135deg, #0f766e, #115e59);
+
+    transform:translateY(-1px);
+
+}
+
 .edit{
 
     background:#2563eb;
