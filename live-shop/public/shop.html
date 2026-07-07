@@ -1698,6 +1698,7 @@
     let hasPendingRealtimeRefresh = false;
     let lastRealtimeFullRefreshAt = 0;
     let hasDeferredSocketRefresh = false;
+    let forceProductReloadOnNextRefresh = false;
 
     async function refreshRealtimeData() {
       if (isRealtimeRefreshing) {
@@ -1710,7 +1711,8 @@
         await loadCart();
 
         const now = Date.now();
-        if (now - lastRealtimeFullRefreshAt > 3500) {
+        if (forceProductReloadOnNextRefresh || now - lastRealtimeFullRefreshAt > 3500) {
+          forceProductReloadOnNextRefresh = false;
           await load(false);
           lastRealtimeFullRefreshAt = now;
         }
@@ -1736,6 +1738,8 @@
 
     if (socket) {
       socket.on("update", () => {
+        forceProductReloadOnNextRefresh = true;
+
         if (document.hidden) {
           hasDeferredSocketRefresh = true;
           return;
