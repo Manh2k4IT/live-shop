@@ -1267,7 +1267,9 @@ function getSortedCart(category = "", sessionId = "") {
                 variantColorStocks,
                 comboStock: stockInfo.stock
             };
-        });
+            })
+            .filter((item) => Number(item.comboStock) > 0);
+
 
 }
 
