@@ -2033,11 +2033,7 @@
                   ${oldPrice > price ? `<span class="popup-price-old">${(oldPrice * item.qty).toLocaleString()}đ</span>` : ""}
                 </div>
                 <div class="popup-product-name">${item.name}</div>
-                <div class="popup-meta">Màu: ${selectedVariantName}</div>
-                <div class="popup-meta popup-combo-stock">Tồn màu: ${comboStock}</div>
                 ${finalSelectedSize ? `<div class="popup-meta">Size: ${finalSelectedSize}</div>` : ""}
-                <div class="popup-meta">SKU: ${item.sku || "—"}</div>
-                <div class="popup-meta">Tồn kho: ${Number(product?.stock ?? item.stock ?? 0)}</div>
               </div>
             </div>
             ${!isEditor ? `
