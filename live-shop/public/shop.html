@@ -924,6 +924,17 @@
       padding: 8px 10px;
     }
 
+    .popup-stock-empty {
+      margin-top: 8px;
+      color: #b91c1c;
+      font-size: 13px;
+      font-weight: 800;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+
     .cart-popup .qty-control {
       margin-top: 0;
       gap: 0;
@@ -2737,7 +2748,8 @@
               <div class="popup-product-name">${product.name}</div>
               <div class="popup-meta">Màu: ${selectedVariantName}</div>
               ${selectedSize ? `<div class="popup-meta">Size: ${selectedSize}</div>` : ""}
-              <div class="popup-meta">Tồn kho: ${stock}</div>
+              <div class="popup-meta">Tồn kho: ${stock > 0 ? stock : "Hết hàng"}</div>
+              ${stock <= 0 ? `<div class="popup-stock-empty">Sản phẩm này hiện đã hết hàng</div>` : ""}
             </div>
           </div>
 
@@ -2787,7 +2799,7 @@
             <button class="qty-btn" ${quickOrderState.qty >= stock ? "disabled" : ""} onclick="changeQuickOrderQty(${quickOrderState.qty + 1})">+</button>
           </div>
 
-          <div class="popup-selected-combo">Quý khách đang chọn ${selectedVariantName}${selectedSize ? `, size ${selectedSize}` : ""} với số lượng ${Math.max(1, quickOrderState.qty)}</div>
+          <div class="popup-selected-combo">${stock <= 0 ? "Sản phẩm đang hết hàng, vui lòng chọn màu khác" : `Quý khách đang chọn ${selectedVariantName}${selectedSize ? `, size ${selectedSize}` : ""} với số lượng ${Math.max(1, quickOrderState.qty)}`}</div>
 
           <div class="checkout-form-title">Thông tin khách đặt hàng</div>
           <form class="checkout-form quick-order-form" onsubmit="event.preventDefault(); quickCheckout();">
