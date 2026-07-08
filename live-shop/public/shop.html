@@ -68,6 +68,14 @@
       text-align: center;
     }
 
+    .shop-header-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+    }
+
     .shop-header-logo {
       width: 110px;
       height: auto;
@@ -87,6 +95,59 @@
 
     .shop-header-desc {
       text-align: center;
+    }
+
+    .shop-cart-button {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      border: 1px solid #d7dee7;
+      background: #ffffff;
+      color: #111827;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .shop-cart-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+      border-color: #cbd5e1;
+      background: #f8fafc;
+    }
+
+    .shop-cart-button-icon {
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .shop-cart-button-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: #ef4444;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      border: 2px solid #fff;
+      box-shadow: 0 6px 14px rgba(239, 68, 68, 0.28);
+    }
+
+    .shop-cart-button-badge.hidden {
+      display: none;
     }
 
     .content {
@@ -1004,65 +1065,100 @@
       }
 
       .panel-header {
-        padding: 14px 14px 8px;
+        padding: 14px 14px 10px;
       }
 
-      .shop-header-brand {
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .shop-header-logo {
-        width: 90px;
-        height: auto;
-        max-height: 90px;
-        object-fit: contain;
-        border-radius: 14px;
-      }
-
-      .panel-header h2 {
-        font-size: 21px;
-      }
-
-      .content {
-        padding: 10px 10px 14px;
-      }
-
-      .product-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+      .shop-header-topbar {
         gap: 10px;
       }
 
-      .product-grid.category-list {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+      .shop-header-brand {
+        gap: 8px;
+        justify-content: flex-start;
       }
 
+      .shop-header-logo {
+        width: 52px;
+        height: 52px;
+        max-height: 52px;
+        border-radius: 12px;
+        padding: 3px;
+      }
+
+      .shop-header-title {
+        font-size: 18px;
+        line-height: 1.1;
+        text-align: left;
+      }
+
+      .shop-header-desc {
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      .shop-cart-button {
+        width: 42px;
+        height: 42px;
+        padding: 0;
+        justify-content: center;
+        border-radius: 14px;
+        background: #ffffff;
+        border-color: #dde3ea;
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+      }
+
+      .shop-cart-button-label {
+        display: none;
+      }
+
+      .shop-cart-button-icon {
+        font-size: 19px;
+      }
+
+      .shop-cart-button-badge {
+        top: -7px;
+        right: -7px;
+        min-width: 20px;
+        height: 20px;
+        font-size: 11px;
+      }
+
+      .content {
+        padding: 10px;
+      }
+
+      .product-grid,
+      .product-grid.category-list,
       .category-section .product-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: 1fr;
+        gap: 12px;
       }
 
       .category-section {
-        padding: 8px;
-        border-radius: 14px;
-        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 16px;
+        margin-bottom: 12px;
+        border: 1px solid #e7ecf2;
+        background: #ffffff;
       }
 
       .product-card {
-        border: none;
-        border-radius: 0;
-        background: transparent;
-        padding: 0;
-        gap: 6px;
+        border: 1px solid #e7ecf2;
+        border-radius: 16px;
+        background: #ffffff;
+        padding: 10px;
+        gap: 8px;
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
       }
 
       .product-image-wrap {
-        border-radius: 0;
+        border-radius: 12px;
+        overflow: hidden;
       }
 
       .product-card img {
-        aspect-ratio: 2 / 3;
+        aspect-ratio: 4 / 5;
       }
-
 
       .category-cart-btn {
         top: 6px;
@@ -1072,23 +1168,23 @@
       }
 
       .product-name {
-        margin-top: 4px;
-        font-size: 16px;
-        text-align: center;
-        text-transform: uppercase;
-        letter-spacing: .01em;
-        line-height: 1.25;
-        min-height: calc(1.25em * 3);
+        margin-top: 2px;
+        font-size: 15px;
+        text-align: left;
+        text-transform: none;
+        letter-spacing: 0;
+        line-height: 1.35;
+        min-height: auto;
         display: -webkit-box;
         -webkit-box-orient: vertical;
-        -webkit-line-clamp: 3;
-        line-clamp: 3;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
         overflow: hidden;
       }
 
       .product-meta {
         display: block;
-        text-align: center;
+        text-align: left;
         font-size: 12px;
         line-height: 1.25;
       }
@@ -1099,11 +1195,11 @@
       }
 
       .price-block {
-        align-items: center;
+        align-items: flex-start;
       }
 
       .price {
-        font-size: 21px;
+        font-size: 20px;
         line-height: 1.05;
       }
 
@@ -1113,7 +1209,7 @@
 
       .product-actions {
         width: 100%;
-        justify-content: center;
+        justify-content: space-between;
         flex-wrap: nowrap;
         gap: 6px;
       }
@@ -1121,8 +1217,8 @@
       .product-actions .btn {
         min-width: 0;
         flex: 1;
-        padding: 9px 6px;
-        border-radius: 11px;
+        padding: 10px 8px;
+        border-radius: 12px;
         font-size: 13px;
       }
 
@@ -1173,9 +1269,16 @@
   <div class="page">
     <section class="panel">
       <div class="panel-header">
-        <div class="shop-header-brand">
-          <img id="shopLogo" class="shop-header-logo" src="/uploads/logogiohang.jpg" alt="GUSA Logo" />
-          <h2 id="productsHeaderTitle" class="shop-header-title">🛍 SẢN PHẨM</h2>
+        <div class="shop-header-topbar">
+          <div class="shop-header-brand">
+            <img id="shopLogo" class="shop-header-logo" src="/uploads/logogiohang.jpg" alt="GUSA Logo" />
+            <h2 id="productsHeaderTitle" class="shop-header-title">🛍 SẢN PHẨM</h2>
+          </div>
+          <button type="button" class="shop-cart-button" onclick="openCartPopup()" aria-label="Giỏ hàng của bạn">
+            <span class="shop-cart-button-icon">🛒</span>
+            <span class="shop-cart-button-label">Giỏ hàng của bạn</span>
+            <span id="shopCartBadge" class="shop-cart-button-badge hidden">0</span>
+          </button>
         </div>
         <p id="productsHeaderDesc" class="shop-header-desc">Gusa – Nâng tầm phong cách với thời trang Linen.</p>
       </div>
@@ -1707,6 +1810,7 @@
     let hasDeferredSocketRefresh = false;
     let forceProductReloadOnNextRefresh = false;
     let quickOrderMode = false;
+    let cartPopupHistoryActive = false;
     let quickOrderState = {
       productId: null,
       variantIndex: 0,
@@ -1722,6 +1826,14 @@
         qty: 1,
         size: ""
       };
+    }
+
+    function updateShopCartBadge() {
+      const badge = document.getElementById("shopCartBadge");
+      if (!badge) return;
+      const totalQty = (Array.isArray(latestCartItems) ? latestCartItems : []).reduce((sum, item) => sum + Math.max(0, Math.floor(Number(item?.qty) || 0)), 0);
+      badge.textContent = String(totalQty);
+      badge.classList.toggle("hidden", totalQty <= 0);
     }
 
     function getQuickOrderProduct() {
@@ -1953,6 +2065,10 @@
       popup.classList.remove("hidden");
       popupActionInFlight = false;
       setPopupBusy(false);
+      if (!cartPopupHistoryActive) {
+        history.pushState({ cartPopupOpen: true }, "", window.location.href);
+        cartPopupHistoryActive = true;
+      }
       if (quickOrderMode) {
         renderQuickOrderPopup();
       } else {
@@ -1960,11 +2076,23 @@
       }
     }
 
-    function closeCartPopup() {
+    function closeCartPopup(fromPopState = false) {
       const popup = document.getElementById("cartPopup");
       if (popup) popup.classList.add("hidden");
       resetQuickOrderState();
+      if (!fromPopState && cartPopupHistoryActive && history.state?.cartPopupOpen) {
+        cartPopupHistoryActive = false;
+        history.back();
+      } else {
+        cartPopupHistoryActive = false;
+      }
     }
+
+    window.addEventListener("popstate", () => {
+      const popup = document.getElementById("cartPopup");
+      if (!popup || popup.classList.contains("hidden")) return;
+      closeCartPopup(true);
+    });
 
     function showPopupAlert(message, type = "error") {
       const popup = document.getElementById("cartPopup");
@@ -2021,6 +2149,7 @@
         _popupKey: String(item.itemKey || `${Number(item.id)}::${String(item.variantKey || "default")}::${String(item.sizeKey || "size:default")}`)
       }));
       latestCartItems = data;
+      updateShopCartBadge();
 
       if (!data.length) {
         popupActiveItemKey = "";
@@ -2301,6 +2430,7 @@
       const initialCartData = await cartRes.json();
       const data = compactCartDuplicates(initialCartData);
       latestCartItems = Array.isArray(data) ? data : [];
+      updateShopCartBadge();
       const now = Date.now();
       const needRefreshProducts = !productsById.size || now - lastProductsSyncAt > 5000;
       if (needRefreshProducts) {
