@@ -364,6 +364,8 @@
       align-items: flex-start;
       gap: 12px;
       box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+      position: relative;
+      padding-right: 46px;
     }
 
     .cart-category-block {
@@ -417,6 +419,7 @@
 
     .cart-info {
       flex: 1;
+      min-width: 0;
     }
 
     .cart-option-grid {
@@ -458,6 +461,9 @@
       border-radius: 999px;
       cursor: pointer;
       font-size: 16px;
+      position: absolute;
+      top: 10px;
+      right: 10px;
     }
 
     .cart-remove:hover {
@@ -467,11 +473,22 @@
     .cart-name {
       font-weight: 700;
       margin-bottom: 4px;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      overflow: hidden;
     }
 
     .cart-qty {
       color: var(--muted);
       font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .cart-meta-compact {
+      margin-top: 2px;
     }
 
     .qty-control {
@@ -1325,7 +1342,52 @@
       }
 
       .cart-option-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: 6px;
+        gap: 6px;
+      }
+
+      .cart-card {
+        padding: 10px;
+        padding-right: 40px;
+        gap: 8px;
+        border-radius: 14px;
+      }
+
+      .cart-card img {
+        width: 64px;
+        height: 64px;
+        border-radius: 10px;
+      }
+
+      .cart-name {
+        font-size: 14px;
+        margin-bottom: 2px;
+      }
+
+      .cart-qty {
+        font-size: 12px;
+      }
+
+      .cart-option-label {
+        font-size: 11px;
+      }
+
+      .cart-option-select {
+        font-size: 12px;
+        padding: 6px 8px;
+      }
+
+      .qty-control {
+        margin-top: 4px;
+      }
+
+      .cart-remove {
+        width: 28px;
+        height: 28px;
+        font-size: 15px;
+        top: 8px;
+        right: 8px;
       }
 
       .cart-popup {
@@ -2650,10 +2712,8 @@
                   <img src="${item.image || "https://placehold.co/80x80?text=No+Image"}" alt="${item.name}" loading="lazy" decoding="async" />
                   <div class="cart-info">
                     <div class="cart-name">${item.name}</div>
-                    ${selectedVariantName ? `<div class="cart-qty">Màu đã chọn: ${selectedVariantName}</div>` : ""}
-                    ${selectedSize ? `<div class="cart-qty">Size đã chọn: ${selectedSize}</div>` : ""}
-                    <div class="cart-qty">SKU: ${item.sku || "—"}</div>
-                    <div class="cart-qty">${item.variantName ? `Tồn màu: ${stockLimit}` : `Tồn kho: ${stockLimit}`}</div>
+                    <div class="cart-qty cart-meta-compact">${selectedVariantName ? `Đã chọn: ${selectedVariantName}` : ""}${selectedSize ? `${selectedVariantName ? " / " : "Đã chọn: "}${selectedSize}` : ""}</div>
+                    <div class="cart-qty">SKU: ${item.sku || "—"} · ${item.variantName ? `Tồn màu: ${stockLimit}` : `Tồn kho: ${stockLimit}`}</div>
                     <div class="cart-option-grid">
                       ${variants.length > 1 ? `
                         <div class="cart-option-field">
