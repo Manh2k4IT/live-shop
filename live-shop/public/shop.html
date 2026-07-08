@@ -358,11 +358,12 @@
       padding: 14px;
       border: 1px solid var(--border);
       border-radius: 16px;
-      background: #f8fafc;
+      background: #ffffff;
       margin-bottom: 12px;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 12px;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
     }
 
     .cart-category-block {
@@ -416,6 +417,36 @@
 
     .cart-info {
       flex: 1;
+    }
+
+    .cart-option-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .cart-option-field {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .cart-option-label {
+      font-size: 12px;
+      color: #475569;
+      font-weight: 700;
+    }
+
+    .cart-option-select {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: #fff;
+      color: #111827;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 10px;
     }
 
     .cart-remove {
@@ -1280,6 +1311,10 @@
         padding: 10px 8px;
         border-radius: 12px;
         font-size: 13px;
+      }
+
+      .cart-option-grid {
+        grid-template-columns: 1fr;
       }
 
       .cart-popup {
@@ -2476,6 +2511,8 @@
     window.removeItemPopup = removeItemPopup;
     window.changeQtyPopup = changeQtyPopup;
     window.checkoutPopup = checkoutPopup;
+    window.changeCartVariant = changeCartVariant;
+    window.changeCartSize = changeCartSize;
 
     setupShopLogo();
     applyPageView();
@@ -2587,15 +2624,43 @@
               const stockLimit = Number.isFinite(comboStock)
                 ? Math.max(0, Math.floor(comboStock))
                 : Math.max(0, Math.floor(Number(product?.stock ?? item.stock ?? 0) || 0));
+              const variants = getVariantImages(product || item);
+              const variantNames = getVariantNames(product || item);
+              const selectedVariantIndexByImage = variants.findIndex((url) => url === String(item.image || ""));
+              const selectedVariantIndexByName = variantNames.findIndex((name) => String(name || "").trim().toLowerCase() === String(item.variantName || "").trim().toLowerCase());
+              const selectedVariantIndex = selectedVariantIndexByImage >= 0
+                ? selectedVariantIndexByImage
+                : (selectedVariantIndexByName >= 0 ? selectedVariantIndexByName : 0);
+              const selectedVariantName = item.variantName || getVariantDisplayName(product || item, selectedVariantIndex, variants[selectedVariantIndex] || item.image || "");
+              const sizeOptions = getAvailableSizesByVariant(product || item, selectedVariantIndex, item.selectedSize || "");
+              const selectedSize = sizeOptions.find((size) => size.toLowerCase() === String(item.selectedSize || "").trim().toLowerCase()) || sizeOptions[0] || String(item.selectedSize || "");
               return `
                 <div class="cart-card">
                   <img src="${item.image || "https://placehold.co/80x80?text=No+Image"}" alt="${item.name}" loading="lazy" decoding="async" />
                   <div class="cart-info">
                     <div class="cart-name">${item.name}</div>
-                    ${item.variantName ? `<div class="cart-qty">Màu: ${item.variantName}</div>` : ""}
-                    ${item.selectedSize ? `<div class="cart-qty">Size: ${item.selectedSize}</div>` : ""}
+                    ${selectedVariantName ? `<div class="cart-qty">Màu đã chọn: ${selectedVariantName}</div>` : ""}
+                    ${selectedSize ? `<div class="cart-qty">Size đã chọn: ${selectedSize}</div>` : ""}
                     <div class="cart-qty">SKU: ${item.sku || "—"}</div>
                     <div class="cart-qty">${item.variantName ? `Tồn màu: ${stockLimit}` : `Tồn kho: ${stockLimit}`}</div>
+                    <div class="cart-option-grid">
+                      ${variants.length > 1 ? `
+                        <div class="cart-option-field">
+                          <span class="cart-option-label">Màu sắc</span>
+                          <select class="cart-option-select" onchange='changeCartVariant(${item.id}, Number(this.value), ${JSON.stringify(selectedSize || "")}, ${JSON.stringify(item.variantKey || "default")}, ${JSON.stringify(item.sizeKey || "size:default")}, ${JSON.stringify(item.itemKey || "")}, ${JSON.stringify(category)})'>
+                            ${variants.map((img, index) => `<option value="${index}" ${index === selectedVariantIndex ? "selected" : ""}>${getVariantDisplayName(product || item, index, img)}</option>`).join("")}
+                          </select>
+                        </div>
+                      ` : ""}
+                      ${sizeOptions.length ? `
+                        <div class="cart-option-field">
+                          <span class="cart-option-label">Size</span>
+                          <select class="cart-option-select" onchange='changeCartSize(${item.id}, ${selectedVariantIndex}, this.value, ${JSON.stringify(item.variantKey || "default")}, ${JSON.stringify(item.sizeKey || "size:default")}, ${JSON.stringify(item.itemKey || "")}, ${JSON.stringify(category)})'>
+                            ${sizeOptions.map((size) => `<option value="${String(size).replace(/"/g, "&quot;")}" ${String(size) === String(selectedSize) ? "selected" : ""}>${size}</option>`).join("")}
+                          </select>
+                        </div>
+                      ` : ""}
+                    </div>
                     <div class="qty-control">
                       <button class="qty-btn" onclick='changeQty(${item.id}, ${item.qty - 1}, ${JSON.stringify(item.variantKey || "default")}, ${JSON.stringify(item.sizeKey || "size:default")}, ${JSON.stringify(item.itemKey || "")})'>−</button>
                       <span class="qty-value">${item.qty}</span>
@@ -2802,6 +2867,108 @@
 
       await Promise.all([loadCart(), load(false)]);
       showToast("Đã cập nhật số lượng");
+    }
+
+    async function changeCartVariant(id, variantIndex, currentSize = "", variantKey = "", sizeKey = "", itemKey = "", category = "") {
+      const product = productsById.get(Number(id));
+      if (!product) {
+        showToast("Không tìm thấy sản phẩm", "error");
+        return;
+      }
+
+      const variants = getVariantImages(product);
+      const safeIndex = Math.max(0, Math.min(Number(variantIndex) || 0, Math.max(0, variants.length - 1)));
+      const nextImage = variants[safeIndex] || product.image || "";
+      const nextVariantName = getVariantDisplayName(product, safeIndex, nextImage);
+      const sizes = getAvailableSizesByVariant(product, safeIndex, currentSize);
+      const normalizedSize = String(currentSize || "").trim().toLowerCase();
+      const nextSize = sizes.find((size) => size.toLowerCase() === normalizedSize) || sizes[0] || "";
+      const stock = getColorStockByVariant(product, safeIndex, Number(product?.stock || 0));
+
+      if (stock <= 0) {
+        showToast("Màu này đã hết hàng", "error");
+        return;
+      }
+
+      const cartItems = Array.isArray(latestCartItems) ? latestCartItems : [];
+      const currentItem = cartItems.find((item) => String(item.itemKey || "") === String(itemKey || ""))
+        || cartItems.find((item) => Number(item.id) === Number(id));
+      const nextQty = Math.max(1, Math.min(Math.max(1, Number(currentItem?.qty || 1)), Math.max(1, stock)));
+
+      const res = await fetch(API + "/change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          qty: nextQty,
+          category,
+          variantKey,
+          sizeKey,
+          itemKey,
+          image: nextImage,
+          variantName: nextVariantName,
+          size: nextSize
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || "Không thể đổi màu", "error");
+        return;
+      }
+
+      await Promise.all([loadCart(), load(false)]);
+      showToast("Đã cập nhật màu/size");
+    }
+
+    async function changeCartSize(id, variantIndex, sizeValue = "", variantKey = "", sizeKey = "", itemKey = "", category = "") {
+      const product = productsById.get(Number(id));
+      if (!product) {
+        showToast("Không tìm thấy sản phẩm", "error");
+        return;
+      }
+
+      const variants = getVariantImages(product);
+      const safeIndex = Math.max(0, Math.min(Number(variantIndex) || 0, Math.max(0, variants.length - 1)));
+      const nextImage = variants[safeIndex] || product.image || "";
+      const nextVariantName = getVariantDisplayName(product, safeIndex, nextImage);
+      const nextSize = String(sizeValue || "").trim();
+      const stock = getColorStockByVariant(product, safeIndex, Number(product?.stock || 0));
+
+      if (stock <= 0) {
+        showToast("Màu này đã hết hàng", "error");
+        return;
+      }
+
+      const cartItems = Array.isArray(latestCartItems) ? latestCartItems : [];
+      const currentItem = cartItems.find((item) => String(item.itemKey || "") === String(itemKey || ""))
+        || cartItems.find((item) => Number(item.id) === Number(id));
+      const nextQty = Math.max(1, Math.min(Math.max(1, Number(currentItem?.qty || 1)), Math.max(1, stock)));
+
+      const res = await fetch(API + "/change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          qty: nextQty,
+          category,
+          variantKey,
+          sizeKey,
+          itemKey,
+          image: nextImage,
+          variantName: nextVariantName,
+          size: nextSize
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || "Không thể đổi size", "error");
+        return;
+      }
+
+      await Promise.all([loadCart(), load(false)]);
+      showToast("Đã cập nhật màu/size");
     }
 
     async function checkout() {
