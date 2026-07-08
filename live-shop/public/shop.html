@@ -2491,6 +2491,8 @@
             <button class="qty-btn" ${quickOrderState.qty >= stock ? "disabled" : ""} onclick="changeQuickOrderQty(${quickOrderState.qty + 1})">+</button>
           </div>
 
+          <div class="popup-selected-combo">Quý khách đang chọn ${selectedVariantName}${selectedSize ? `, size ${selectedSize}` : ""} với số lượng ${Math.max(1, quickOrderState.qty)}</div>
+
           <div class="checkout-form-title">Thông tin khách đặt hàng</div>
           <form class="checkout-form quick-order-form" onsubmit="event.preventDefault(); quickCheckout();">
             <input id="quickCustomerName" placeholder="Họ tên khách" required />
