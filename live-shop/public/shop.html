@@ -429,6 +429,10 @@
       margin-top: 8px;
     }
 
+    .cart-option-grid > .cart-option-field:only-child {
+      grid-column: 1 / -1;
+    }
+
     .cart-option-field {
       display: grid;
       gap: 4px;
@@ -444,12 +448,12 @@
     .cart-option-select {
       width: 100%;
       border: 1px solid #d1d5db;
-      border-radius: 10px;
+      border-radius: 11px;
       background: #fff;
       color: #111827;
       font-size: 13px;
       font-weight: 600;
-      padding: 8px 10px;
+      padding: 9px 12px;
     }
 
     .cart-remove {
@@ -2717,7 +2721,7 @@
                     <div class="cart-option-grid">
                       ${variants.length > 1 ? `
                         <div class="cart-option-field">
-                          <span class="cart-option-label">Màu sắc</span>
+                          <span class="cart-option-label">Màu sắc-size</span>
                           <select class="cart-option-select" onchange='changeCartVariant(${item.id}, Number(this.value), ${JSON.stringify(selectedSize || "")}, ${JSON.stringify(item.variantKey || "default")}, ${JSON.stringify(item.sizeKey || "size:default")}, ${JSON.stringify(item.itemKey || "")}, ${JSON.stringify(category)})'>
                             ${variants.map((img, index) => `<option value="${index}" ${index === selectedVariantIndex ? "selected" : ""}>${getVariantDisplayName(product || item, index, img)}</option>`).join("")}
                           </select>
