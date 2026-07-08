@@ -35,6 +35,14 @@
       padding: 24px;
     }
 
+    .page.single-panel {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .hidden-view {
+      display: none !important;
+    }
+
     .panel {
       background: var(--card);
       border-radius: 24px;
@@ -57,6 +65,28 @@
     .panel-header p {
       margin: 0;
       color: var(--muted);
+    }
+
+    .cart-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .cart-page-back {
+      border: 1px solid #d7dee7;
+      background: #ffffff;
+      color: #111827;
+      border-radius: 10px;
+      padding: 7px 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .cart-page-back:hover {
+      background: #f8fafc;
     }
 
     .shop-header-brand {
@@ -463,6 +493,23 @@
     .checkout-form button {
       min-width: 0;
       margin-top: 4px;
+    }
+
+    .checkout-submit-total {
+      margin-top: 2px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #b91c1c;
+      text-align: right;
+    }
+
+    .btn-buy-red {
+      background: #dc2626;
+      color: #fff;
+    }
+
+    .btn-buy-red:hover {
+      background: #b91c1c;
     }
 
     .empty {
@@ -1266,15 +1313,15 @@
     </div>
   </div>
 
-  <div class="page">
-    <section class="panel">
+  <div id="pageLayout" class="page">
+    <section id="productsPanel" class="panel">
       <div class="panel-header">
         <div class="shop-header-topbar">
           <div class="shop-header-brand">
             <img id="shopLogo" class="shop-header-logo" src="/uploads/logogiohang.jpg" alt="GUSA Logo" />
             <h2 id="productsHeaderTitle" class="shop-header-title">🛍 SẢN PHẨM</h2>
           </div>
-          <button type="button" class="shop-cart-button" onclick="openCartPopup()" aria-label="Giỏ hàng của bạn">
+          <button type="button" class="shop-cart-button" onclick="goToCartPage()" aria-label="Giỏ hàng của bạn">
             <span class="shop-cart-button-icon">🛒</span>
             <span class="shop-cart-button-label">Giỏ hàng của bạn</span>
             <span id="shopCartBadge" class="shop-cart-button-badge hidden">0</span>
@@ -1287,9 +1334,12 @@
       </div>
     </section>
 
-    <aside class="panel">
+    <aside id="cartPanel" class="panel">
       <div class="panel-header">
-        <h2>🛒 Giỏ hàng</h2>
+        <div class="cart-header-row">
+          <h2>🛒 Giỏ hàng</h2>
+          <button id="cartBackBtn" type="button" class="cart-page-back" onclick="goToShopPage()">← Về shop</button>
+        </div>
         <p>Khách hàng sẽ đặt hàng ngay tại đây</p>
       </div>
       <div class="content">
@@ -1710,6 +1760,42 @@
     function getCurrentCategory() {
       const category = new URLSearchParams(window.location.search).get("category") || "";
       return category.trim();
+    }
+
+    function isCartView() {
+      return (new URLSearchParams(window.location.search).get("view") || "").trim().toLowerCase() === "cart";
+    }
+
+    function getViewUrl(view) {
+      const url = new URL(window.location.href);
+      if (String(view || "").toLowerCase() === "cart") {
+        url.searchParams.set("view", "cart");
+      } else {
+        url.searchParams.delete("view");
+      }
+      return url.toString();
+    }
+
+    function goToCartPage() {
+      if (isCartView()) return;
+      window.location.href = getViewUrl("cart");
+    }
+
+    function goToShopPage() {
+      window.location.href = getViewUrl("shop");
+    }
+
+    function applyPageView() {
+      const pageLayout = document.getElementById("pageLayout");
+      const productsPanel = document.getElementById("productsPanel");
+      const cartPanel = document.getElementById("cartPanel");
+      const cartBackBtn = document.getElementById("cartBackBtn");
+      const cartView = isCartView();
+
+      if (pageLayout) pageLayout.classList.add("single-panel");
+      if (productsPanel) productsPanel.classList.toggle("hidden-view", cartView);
+      if (cartPanel) cartPanel.classList.toggle("hidden-view", !cartView);
+      if (cartBackBtn) cartBackBtn.classList.toggle("hidden-view", !cartView);
     }
 
     function getRequestedProductId() {
@@ -2379,6 +2465,7 @@
     window.checkoutPopup = checkoutPopup;
 
     setupShopLogo();
+    applyPageView();
 
     function getCheckoutDraft() {
       return {
@@ -2524,7 +2611,8 @@
           <input id="customerName" placeholder="Họ tên khách" required />
           <input id="customerPhone" placeholder="Số điện thoại" required />
           <input id="customerAddress" placeholder="Địa chỉ nhận hàng" required />
-          <button class="btn btn-primary" type="submit">Mua Hàng</button>
+          <div class="checkout-submit-total">Tổng tiền: ${total.toLocaleString()}đ</div>
+          <button class="btn btn-buy-red" type="submit">Mua Hàng</button>
         </form>
       `;
 
@@ -2628,7 +2716,8 @@
             <input id="quickCustomerName" placeholder="Họ tên khách" required />
             <input id="quickCustomerPhone" placeholder="Số điện thoại" required />
             <input id="quickCustomerAddress" placeholder="Địa chỉ nhận hàng" required />
-            <button class="btn btn-primary" type="submit" ${stock <= 0 ? "disabled" : ""}>Mua Hàng</button>
+            <div class="checkout-submit-total">Tổng tiền: ${lineTotal.toLocaleString()}đ</div>
+            <button class="btn btn-buy-red" type="submit" ${stock <= 0 ? "disabled" : ""}>Mua Hàng</button>
           </form>
         </div>
       `;
