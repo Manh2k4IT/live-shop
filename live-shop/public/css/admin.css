@@ -32,10 +32,12 @@ body{
     display:flex;
     flex-direction:column;
     gap:24px;
-    position:sticky;
+    position:fixed;
     top:0;
+    left:0;
     height:100vh;
     overflow-y:auto;
+    z-index:100;
 }
 
 .brand h2{
@@ -108,6 +110,7 @@ body{
 
 .main{
     flex:1;
+    margin-left:280px;
 }
 
 .container{
@@ -1330,8 +1333,13 @@ td img{
         position:static;
         height:auto;
         overflow:visible;
+        z-index:auto;
         padding:14px 12px;
         gap:14px;
+    }
+
+    .main{
+        margin-left:0;
     }
 
     .brand h2{
