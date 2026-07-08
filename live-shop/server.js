@@ -1665,6 +1665,76 @@ app.post("/checkout", (req, res) => {
 
 });
 
+app.post("/checkout/quick", (req, res) => {
+
+    const { customer, phone, address, productId, variantIndex, variantName, size, qty } = req.body || {};
+    const id = Number(productId);
+    const requestedQty = Math.max(1, Math.floor(Number(qty) || 0));
+
+    if (!customer || !phone || !address) {
+        return res.status(400).json({ error: "Vui lòng nhập đầy đủ thông tin" });
+    }
+
+    if (!Number.isFinite(id)) {
+        return res.status(400).json({ error: "Sản phẩm không hợp lệ" });
+    }
+
+    const product = findProductById(id);
+    if (!product) {
+        return res.status(404).json({ error: "Sản phẩm không tồn tại" });
+    }
+
+    const firstImage = Array.isArray(product.images) && product.images.length ? product.images[0] : product.image || "";
+    const effectiveVariantIndex = Number.isFinite(Number(variantIndex))
+        ? Math.max(0, Math.floor(Number(variantIndex)))
+        : getVariantIndex(product, firstImage, variantName);
+    const effectiveImage = resolvePreferredVariantImage(product, firstImage);
+    const effectiveVariantName = resolveVariantName(product, effectiveImage, variantName, effectiveVariantIndex)
+        || getVariantNameByImage(product, effectiveImage)
+        || String(variantName || "").trim();
+    const effectiveSize = resolveSelectedSizeByVariant(product, effectiveVariantIndex, size || "");
+    const stockInfo = getVariantStockInfo(product, effectiveVariantIndex, effectiveSize);
+
+    if (stockInfo.stock <= 0) {
+        return res.status(400).json({ error: `Sản phẩm ${product.name} đã hết tồn kho` });
+    }
+
+    const finalQty = Math.min(requestedQty, stockInfo.stock);
+    if (finalQty <= 0) {
+        return res.status(400).json({ error: `Sản phẩm ${product.name} không đủ tồn kho` });
+    }
+
+    decrementVariantStock(product, effectiveVariantIndex, effectiveSize, finalQty);
+
+    const total = normalizeNumberValue(product.price, 0) * finalQty;
+    const newOrder = {
+        id: Date.now(),
+        customer,
+        phone,
+        address,
+        total,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        items: [{
+            name: product.name,
+            qty: finalQty,
+            sku: product.sku || "",
+            category: getProductCategory(product),
+            variantName: effectiveVariantName || "",
+            size: effectiveSize || ""
+        }]
+    };
+
+    orders.unshift(newOrder);
+    updateClient();
+
+    res.json({
+        ...newOrder,
+        message: "Đã tạo đơn đặt nhanh thành công"
+    });
+
+});
+
 /* ===========================
    ADD PRODUCT
 =========================== */

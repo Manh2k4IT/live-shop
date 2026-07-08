@@ -1706,6 +1706,51 @@
     let lastRealtimeFullRefreshAt = 0;
     let hasDeferredSocketRefresh = false;
     let forceProductReloadOnNextRefresh = false;
+    let quickOrderMode = false;
+    let quickOrderState = {
+      productId: null,
+      variantIndex: 0,
+      qty: 1,
+      size: ""
+    };
+
+    function resetQuickOrderState() {
+      quickOrderMode = false;
+      quickOrderState = {
+        productId: null,
+        variantIndex: 0,
+        qty: 1,
+        size: ""
+      };
+    }
+
+    function getQuickOrderProduct() {
+      return Number.isFinite(Number(quickOrderState.productId))
+        ? productsById.get(Number(quickOrderState.productId))
+        : null;
+    }
+
+    function getQuickOrderSelectedVariantIndex(product) {
+      if (!product) return 0;
+      const variants = getVariantImages(product);
+      if (!variants.length) return 0;
+
+      const safeIndex = Number(quickOrderState.variantIndex);
+      if (Number.isFinite(safeIndex) && safeIndex >= 0 && safeIndex < variants.length) return safeIndex;
+      return getPreferredInStockVariantIndex(product, Number(product?.id));
+    }
+
+    function syncQuickOrderStateFromProduct(product) {
+      if (!product) return;
+      const variantIndex = getQuickOrderSelectedVariantIndex(product);
+      const sizes = getAvailableSizesByVariant(product, variantIndex);
+      const currentSize = String(quickOrderState.size || "").trim();
+      const matchedSize = sizes.find((size) => size.toLowerCase() === currentSize.toLowerCase());
+      quickOrderState.variantIndex = variantIndex;
+      quickOrderState.size = matchedSize || sizes[0] || currentSize;
+      const stock = getColorStockByVariant(product, variantIndex, Number(product?.stock || 0));
+      quickOrderState.qty = Math.max(1, Math.min(Number(quickOrderState.qty || 1), Math.max(1, stock)));
+    }
 
     async function refreshRealtimeData() {
       if (isRealtimeRefreshing) {
@@ -1870,36 +1915,32 @@
     }
 
     async function orderNow(id) {
-      const selectedImage = getSelectedImageForProduct(id);
-      const selectedVariantName = getSelectedVariantNameForProduct(id);
-      const selectedSize = getSelectedSizeForProduct(id);
-      const res = await fetch(API + "/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, image: selectedImage, variantName: selectedVariantName, size: selectedSize, category: getCurrentCategory() })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        showToast(data.error || "Không thể đặt hàng", "error");
+      const product = productsById.get(Number(id));
+      if (!product) {
+        showToast("Không tìm thấy sản phẩm", "error");
         return;
       }
 
-      popupActiveProductId = Number(id);
-      await Promise.all([loadCart(), load(false)]);
+      quickOrderMode = true;
+      quickOrderState.productId = Number(id);
+      quickOrderState.variantIndex = getPreferredInStockVariantIndex(product, Number(id));
+      quickOrderState.qty = 1;
+      quickOrderState.size = getAvailableSizesByVariant(product, quickOrderState.variantIndex)[0] || "";
       openCartPopup();
     }
 
     function openCartPopup() {
       const popup = document.getElementById("cartPopup");
       if (!popup) return;
+      const popupTitle = quickOrderMode ? "Đặt hàng nhanh" : "Giỏ hàng đặt hàng";
+      const popupSubtitle = quickOrderMode ? "Chọn đúng sản phẩm này để chốt đơn" : "Chốt đơn nhanh";
       popup.innerHTML = `
         <div class="cart-popup-sheet" onclick="event.stopPropagation()">
           <div class="cart-popup-handle"></div>
           <div class="cart-popup-header">
             <div class="cart-popup-title">
-              <strong>Giỏ hàng đặt hàng</strong>
-              <span>Chốt đơn nhanh</span>
+              <strong>${popupTitle}</strong>
+              <span>${popupSubtitle}</span>
             </div>
             <button class="cart-popup-close" onclick="closeCartPopup()">✕</button>
           </div>
@@ -1912,12 +1953,17 @@
       popup.classList.remove("hidden");
       popupActionInFlight = false;
       setPopupBusy(false);
-      renderCartPopup(false);
+      if (quickOrderMode) {
+        renderQuickOrderPopup();
+      } else {
+        renderCartPopup(false);
+      }
     }
 
     function closeCartPopup() {
       const popup = document.getElementById("cartPopup");
       if (popup) popup.classList.add("hidden");
+      resetQuickOrderState();
     }
 
     function showPopupAlert(message, type = "error") {
@@ -2042,7 +2088,7 @@
               </div>
             ` : ""}
             ${isEditor && variants.length > 1 ? `
-              <div class="popup-section-title">Màu sắc (${variants.length})</div>
+              <div class="popup-section-title">Màu sắc-size (${variants.length})</div>
               <div class="popup-variant-grid" aria-label="Chọn màu trong popup">
                 ${variants.map((img, index) => `
                   ${(() => {
@@ -2344,6 +2390,7 @@
           <span>${total.toLocaleString()}đ</span>
         </div>
         <form class="checkout-form" onsubmit="event.preventDefault(); checkout();">
+          <div class="checkout-form-title">Thông tin khách đặt hàng</div>
           <input id="customerName" placeholder="Họ tên khách" required />
           <input id="customerPhone" placeholder="Số điện thoại" required />
           <input id="customerAddress" placeholder="Địa chỉ nhận hàng" required />
@@ -2354,6 +2401,137 @@
       document.getElementById("cart").innerHTML = html;
       restoreCheckoutDraft(draft);
       restoreCheckoutFocus(focusState);
+    }
+
+    function renderQuickOrderPopup() {
+      clearPopupMessages();
+      const popupBody = document.getElementById("cartPopupBody");
+      if (!popupBody) return;
+
+      const product = getQuickOrderProduct();
+      if (!product) {
+        popupBody.innerHTML = '<div class="empty">Không tìm thấy sản phẩm</div>';
+        return;
+      }
+
+      syncQuickOrderStateFromProduct(product);
+
+      const variants = getVariantImages(product);
+      const selectedVariantIndex = getQuickOrderSelectedVariantIndex(product);
+      const selectedImage = variants[selectedVariantIndex] || product.image || "https://placehold.co/80x80?text=No+Image";
+      const selectedVariantName = getVariantDisplayName(product, selectedVariantIndex, selectedImage);
+      const sizes = getAvailableSizesByVariant(product, selectedVariantIndex);
+      const selectedSize = quickOrderState.size || sizes[0] || "";
+      const stock = getColorStockByVariant(product, selectedVariantIndex, Number(product?.stock || 0));
+      const price = Number(product?.price || 0);
+      const oldPrice = Number(product?.oldPrice || price);
+      const lineTotal = price * Math.max(1, Number(quickOrderState.qty || 1));
+      const discountPercent = oldPrice > price ? Math.round((1 - price / oldPrice) * 100) : 0;
+
+      popupBody.innerHTML = `
+        <div class="popup-product-card is-editor quick-order-card" data-product-id="${product.id}">
+          <div class="popup-product-head">
+            <img class="popup-product-image" src="${selectedImage}" alt="${product.name}" loading="lazy" decoding="async" />
+            <div>
+              <div class="popup-price-wrap">
+                ${discountPercent > 0 ? `<span class="popup-discount-badge">-${discountPercent}%</span>` : ""}
+                <span class="popup-price-now">${lineTotal.toLocaleString()}đ</span>
+                ${oldPrice > price ? `<span class="popup-price-old">${(oldPrice * Math.max(1, Number(quickOrderState.qty || 1))).toLocaleString()}đ</span>` : ""}
+              </div>
+              <div class="popup-product-name">${product.name}</div>
+              <div class="popup-meta">Màu: ${selectedVariantName}</div>
+              ${selectedSize ? `<div class="popup-meta">Size: ${selectedSize}</div>` : ""}
+              <div class="popup-meta">Tồn kho: ${stock}</div>
+            </div>
+          </div>
+
+          ${variants.length > 1 ? `
+            <div class="popup-section-title">Màu sắc-size (${variants.length})</div>
+            <div class="popup-variant-grid" aria-label="Chọn màu trong popup">
+              ${variants.map((img, index) => {
+                const variantStock = getColorStockByVariant(product, index, Number(product?.stock || 0));
+                const isOut = variantStock <= 0;
+                return `
+                  <button
+                    type="button"
+                    class="popup-variant-thumb ${index === selectedVariantIndex ? "active" : ""} ${isOut ? "out" : ""}"
+                    ${isOut ? "disabled" : ""}
+                    onclick="selectQuickOrderVariant(${index})"
+                    title="${isOut ? `${getVariantDisplayName(product, index, img)} - Đã hết hàng` : getVariantDisplayName(product, index, img)}"
+                  >
+                    <div class="popup-variant-image-wrap">
+                      <img src="${img}" alt="${getVariantDisplayName(product, index, img)}" loading="lazy" decoding="async" />
+                      ${isOut ? '<span class="popup-variant-soldout">Đã hết hàng</span>' : ""}
+                    </div>
+                    <span class="popup-variant-label">${getVariantDisplayName(product, index, img)}</span>
+                    <span class="popup-variant-stock">Tồn: ${variantStock}</span>
+                  </button>
+                `;
+              }).join("")}
+            </div>
+          ` : ""}
+
+          ${sizes.length ? `
+            <div class="popup-section-title">Size (${sizes.length})</div>
+            <div class="popup-size-grid" aria-label="Chọn size trong popup">
+              ${sizes.map((size) => `
+                <button
+                  type="button"
+                  class="popup-size-chip ${size === selectedSize ? "active" : ""}"
+                  onclick='selectQuickOrderSize(${JSON.stringify(size)})'
+                >${size}</button>
+              `).join("")}
+            </div>
+          ` : ""}
+
+          <div class="popup-section-title">Số lượng</div>
+          <div class="qty-control quick-order-qty">
+            <button class="qty-btn" ${quickOrderState.qty <= 1 ? "disabled" : ""} onclick="changeQuickOrderQty(${quickOrderState.qty - 1})">−</button>
+            <span class="qty-value">${Math.max(1, quickOrderState.qty)}</span>
+            <button class="qty-btn" ${quickOrderState.qty >= stock ? "disabled" : ""} onclick="changeQuickOrderQty(${quickOrderState.qty + 1})">+</button>
+          </div>
+
+          <div class="checkout-form-title">Thông tin khách đặt hàng</div>
+          <form class="checkout-form quick-order-form" onsubmit="event.preventDefault(); quickCheckout();">
+            <input id="quickCustomerName" placeholder="Họ tên khách" required />
+            <input id="quickCustomerPhone" placeholder="Số điện thoại" required />
+            <input id="quickCustomerAddress" placeholder="Địa chỉ nhận hàng" required />
+            <button class="btn btn-primary" type="submit" ${stock <= 0 ? "disabled" : ""}>Mua Hàng</button>
+          </form>
+        </div>
+      `;
+    }
+
+    function selectQuickOrderVariant(variantIndex) {
+      const product = getQuickOrderProduct();
+      if (!product) return;
+      const variants = getVariantImages(product);
+      const safeIndex = Math.max(0, Math.min(Number(variantIndex) || 0, variants.length - 1));
+      const stock = getColorStockByVariant(product, safeIndex, Number(product?.stock || 0));
+      if (stock <= 0) {
+        showToast("Màu này đã hết hàng", "error");
+        return;
+      }
+
+      quickOrderState.variantIndex = safeIndex;
+      quickOrderState.size = getAvailableSizesByVariant(product, safeIndex)[0] || "";
+      quickOrderState.qty = Math.min(Math.max(1, quickOrderState.qty || 1), stock);
+      renderQuickOrderPopup();
+    }
+
+    function selectQuickOrderSize(sizeValue) {
+      const product = getQuickOrderProduct();
+      if (!product) return;
+      quickOrderState.size = String(sizeValue || "").trim();
+      renderQuickOrderPopup();
+    }
+
+    function changeQuickOrderQty(nextQty) {
+      const product = getQuickOrderProduct();
+      if (!product) return;
+      const stock = getColorStockByVariant(product, getQuickOrderSelectedVariantIndex(product), Number(product?.stock || 0));
+      quickOrderState.qty = Math.max(1, Math.min(Math.max(1, Number(nextQty) || 1), Math.max(1, stock)));
+      renderQuickOrderPopup();
     }
 
     async function removeItem(id, variantKey = "", sizeKey = "", itemKey = "") {
@@ -2418,6 +2596,47 @@
       document.getElementById("customerName").value = "";
       document.getElementById("customerPhone").value = "";
       document.getElementById("customerAddress").value = "";
+      await Promise.all([loadCart(), load(false)]);
+    }
+
+    async function quickCheckout() {
+      const product = getQuickOrderProduct();
+      if (!product) {
+        showToast("Không tìm thấy sản phẩm", "error");
+        return;
+      }
+
+      const customer = document.getElementById("quickCustomerName").value.trim();
+      const phone = document.getElementById("quickCustomerPhone").value.trim();
+      const address = document.getElementById("quickCustomerAddress").value.trim();
+
+      const payload = {
+        productId: Number(product.id),
+        variantIndex: getQuickOrderSelectedVariantIndex(product),
+        variantName: getVariantDisplayName(product, getQuickOrderSelectedVariantIndex(product), getVariantImages(product)[getQuickOrderSelectedVariantIndex(product)] || product.image || ""),
+        size: quickOrderState.size || getAvailableSizesByVariant(product, getQuickOrderSelectedVariantIndex(product))[0] || "",
+        qty: Math.max(1, Number(quickOrderState.qty || 1)),
+        customer,
+        phone,
+        address
+      };
+
+      const res = await fetch(API + "/checkout/quick", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        showPopupAlert(data.error || "Đặt hàng thất bại", "error");
+        return;
+      }
+
+      if (data.message) showPopupSuccess();
+      closeCartPopup();
+      showOrderSuccessModal();
+      resetQuickOrderState();
       await Promise.all([loadCart(), load(false)]);
     }
 
