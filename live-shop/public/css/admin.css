@@ -1217,18 +1217,25 @@ td img{
 }
 
 .order-actions{
-    display:flex;
-    flex-wrap:wrap;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
     gap:8px;
 }
 
 .order-actions button{
+    min-height:38px;
     padding:8px 12px;
-    border-radius:999px;
+    border-radius:12px;
     font-weight:700;
     font-size:13px;
-    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
-    transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+    letter-spacing:.01em;
+    border:1px solid transparent;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    box-shadow:0 3px 8px rgba(15, 23, 42, 0.06);
+    transition: transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
 }
 
 .order-actions button:hover{
@@ -1237,23 +1244,27 @@ td img{
 }
 
 .order-actions button.pending{
-    background:#fff7ed;
-    color:#c2410c;
+    background:#fff8e8;
+    border-color:#f5d08a;
+    color:#b45309;
 }
 
 .order-actions button.confirmed{
-    background:#eff6ff;
+    background:#eef4ff;
+    border-color:#bfdbfe;
     color:#1d4ed8;
 }
 
 .order-actions button.done{
-    background:#ecfdf5;
+    background:#ecfdf3;
+    border-color:#a7f3d0;
     color:#047857;
 }
 
 .order-actions button.active{
     color:white;
-    box-shadow:none;
+    border-color:transparent;
+    box-shadow:0 8px 16px rgba(15, 23, 42, 0.16);
 }
 
 .order-actions button.delete-order{
@@ -1261,6 +1272,7 @@ td img{
     color:#ffffff;
     border:1px solid #b91c1c;
     font-weight:800;
+    grid-column:1 / -1;
 }
 
 .order-actions button.delete-order:hover{
@@ -1278,6 +1290,20 @@ td img{
 
 .order-actions button.done.active{
     background:#10b981;
+}
+
+@media(max-width:768px){
+    .order-actions{
+        grid-template-columns:1fr;
+    }
+
+    .order-actions button{
+        width:100%;
+    }
+
+    .order-actions button.delete-order{
+        grid-column:auto;
+    }
 }
 
 /* ===========================
