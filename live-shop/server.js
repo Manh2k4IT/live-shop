@@ -1440,13 +1440,15 @@ app.get("/gio-hang", (req, res) => {
 
 app.get("/m", (req, res) => {
 
-    res.redirect("/live-link.html");
+    const query = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
+    res.redirect(`/live-link.html${query}`);
 
 });
 
 app.get("/live", (req, res) => {
 
-    res.redirect("/live-link.html");
+    const query = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
+    res.redirect(`/live-link.html${query}`);
 
 });
 

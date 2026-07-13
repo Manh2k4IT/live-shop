@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mo gio hang</title>
+  <title>Mo lien ket san pham</title>
   <meta name="robots" content="noindex,nofollow" />
   <style>
     :root {
@@ -98,20 +98,53 @@
 </head>
 <body>
   <main class="card">
-    <h1>Dang mo trang gio hang...</h1>
+    <h1>Dang mo lien ket...</h1>
     <p>
-      Neu app Facebook chua tu mo ngay, bam nut ben duoi de vao gio hang.
+      Neu app Facebook chua tu mo ngay, bam nut ben duoi de vao dung trang ban vua chia se.
     </p>
     <span id="status" class="status">Dang chuyen huong</span>
     <div class="buttons">
-      <a id="openBtn" class="btn primary" href="/shop.html?view=cart#cart">Mo gio hang ngay</a>
+      <a id="openBtn" class="btn primary" href="/shop.html">Mo lien ket ngay</a>
       <a class="btn ghost" href="/shop.html">Ve trang shop</a>
     </div>
   </main>
 
   <script>
     (function () {
-      const TARGET = "/shop.html?view=cart#cart";
+      const params = new URLSearchParams(window.location.search);
+      const buildTarget = () => {
+        const fallback = new URL("/shop.html", window.location.origin);
+        const toRaw = String(params.get("to") || "").trim();
+
+        if (toRaw) {
+          try {
+            const parsed = new URL(toRaw, window.location.origin);
+            const blockedPath = ["/m", "/live", "/live-link.html"];
+            if (parsed.origin === window.location.origin && !blockedPath.includes(parsed.pathname)) {
+              return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+            }
+          } catch (_err) {
+            // Ignore malformed "to" and continue with query based route.
+          }
+        }
+
+        const next = new URL(fallback.toString());
+        ["category", "productId", "view"].forEach((key) => {
+          const value = String(params.get(key) || "").trim();
+          if (value) next.searchParams.set(key, value);
+        });
+
+        const hash = String(params.get("hash") || "").trim();
+        if (hash) {
+          next.hash = hash.startsWith("#") ? hash : `#${hash}`;
+        } else if ((next.searchParams.get("view") || "").toLowerCase() === "cart") {
+          next.hash = "cart";
+        }
+
+        return `${next.pathname}${next.search}${next.hash}`;
+      };
+
+      const TARGET = buildTarget();
       const statusEl = document.getElementById("status");
       const openBtn = document.getElementById("openBtn");
       if (openBtn) openBtn.href = TARGET;
@@ -120,7 +153,7 @@
       const isFacebookIab = ua.includes("fban") || ua.includes("fbav") || ua.includes("fb_iab") || ua.includes("fb4a") || ua.includes("fbios");
 
       const go = () => {
-        if (statusEl) statusEl.textContent = "Dang mo gio hang";
+        if (statusEl) statusEl.textContent = "Dang mo dung lien ket";
         window.location.replace(TARGET);
       };
 

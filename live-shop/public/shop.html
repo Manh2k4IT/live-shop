@@ -1887,22 +1887,11 @@
       return category.trim();
     }
 
-    function isFacebookInAppBrowser() {
-      const ua = String(navigator.userAgent || "").toLowerCase();
-      const ref = String(document.referrer || "").toLowerCase();
-      return ua.includes("fban") || ua.includes("fbav") || ua.includes("fb_iab") || ref.includes("facebook.com") || ref.includes("m.facebook.com") || ref.includes("l.facebook.com");
-    }
-
     function isCartView() {
       const params = new URLSearchParams(window.location.search);
       const viewParam = (params.get("view") || "").trim().toLowerCase();
       const hash = String(window.location.hash || "").replace(/^#/, "").trim().toLowerCase();
-      if (viewParam === "cart" || hash === "cart") return true;
-
-      // Facebook in-app browser may open a plain shop link from comments.
-      // Defaulting to cart here ensures buyers always land on checkout panel.
-      if (!viewParam && !hash && isFacebookInAppBrowser()) return true;
-      return false;
+      return viewParam === "cart" || hash === "cart";
     }
 
     function getViewUrl(view) {
