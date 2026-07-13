@@ -1426,6 +1426,18 @@ app.get("/", (req, res) => {
 
 });
 
+app.get("/cart", (req, res) => {
+
+    res.redirect("/shop.html?view=cart#cart");
+
+});
+
+app.get("/gio-hang", (req, res) => {
+
+    res.redirect("/shop.html?view=cart#cart");
+
+});
+
 app.get("/products/all", (req, res) => {
 
     const category = getRequestedCategory(req);
