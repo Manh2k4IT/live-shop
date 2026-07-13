@@ -1438,6 +1438,18 @@ app.get("/gio-hang", (req, res) => {
 
 });
 
+app.get("/m", (req, res) => {
+
+    res.redirect("/live-link.html");
+
+});
+
+app.get("/live", (req, res) => {
+
+    res.redirect("/live-link.html");
+
+});
+
 app.get("/products/all", (req, res) => {
 
     const category = getRequestedCategory(req);
