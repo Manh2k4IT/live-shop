@@ -4,10 +4,12 @@ const API = window.location.origin && window.location.origin !== "null"
 const state = { products: [], orders: [] };
 const DEFAULT_SHOP_LOGO = "/uploads/logogusa.jpg";
 const DEFAULT_PUBLIC_SHOP_URL = "https://shop.gusa.vn";
+const DEFAULT_UPLOAD_MAX_FILE_SIZE_MB = 12;
 let productSortable = null;
 const PRODUCT_CATEGORIES = ["Áo", "Quần", "Chân váy", "Đầm", "Khác"];
 let variantRowsData = [];
 let shopPublicUrl = DEFAULT_PUBLIC_SHOP_URL;
+let uploadMaxFileSizeMb = DEFAULT_UPLOAD_MAX_FILE_SIZE_MB;
 
 function sanitizeOrigin(input) {
   const raw = String(input || "").trim();
@@ -307,6 +309,10 @@ async function loadBrandSettings() {
     if (!res.ok) return;
     applyBrandLogo(data.shopLogo);
     shopPublicUrl = sanitizeOrigin(data.shopPublicUrl) || DEFAULT_PUBLIC_SHOP_URL;
+    const serverLimit = Number(data.uploadMaxFileSizeMb);
+    uploadMaxFileSizeMb = Number.isFinite(serverLimit) && serverLimit > 0
+      ? Math.floor(serverLimit)
+      : DEFAULT_UPLOAD_MAX_FILE_SIZE_MB;
   } catch (error) {
     applyBrandLogo(DEFAULT_SHOP_LOGO);
   }
@@ -680,6 +686,12 @@ async function uploadImage(file) {
 
   if (!String(file.type || "").toLowerCase().startsWith("image/")) {
     throw new Error("File đã chọn không phải ảnh hợp lệ");
+  }
+
+  const maxBytes = Math.max(1, Number(uploadMaxFileSizeMb) || DEFAULT_UPLOAD_MAX_FILE_SIZE_MB) * 1024 * 1024;
+  if (Number(file.size || 0) > maxBytes) {
+    const sizeMb = (Number(file.size || 0) / (1024 * 1024)).toFixed(2);
+    throw new Error(`Ảnh \"${file.name || "không rõ tên"}\" nặng ${sizeMb}MB, vượt giới hạn ${uploadMaxFileSizeMb}MB`);
   }
 
   const formData = new FormData();

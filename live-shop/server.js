@@ -1458,7 +1458,8 @@ app.get("/settings", (req, res) => {
 
     res.json({
         shopLogo: String(appSettings?.shopLogo || DEFAULT_SETTINGS.shopLogo),
-        shopPublicUrl: String(appSettings?.shopPublicUrl || DEFAULT_SETTINGS.shopPublicUrl || "")
+        shopPublicUrl: String(appSettings?.shopPublicUrl || DEFAULT_SETTINGS.shopPublicUrl || ""),
+        uploadMaxFileSizeMb
     });
 
 });
