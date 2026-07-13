@@ -2287,16 +2287,21 @@ app.post("/upload",
 
         }
 
-        try {
-            await optimizeImageFile(req.file.path);
-        } catch (optimizationError) {
-            console.warn("Không thể tối ưu ảnh vừa upload:", optimizationError.message);
-        }
+        const uploadedFilePath = req.file.path;
 
         res.json({
 
             url: "/uploads/" + req.file.filename
 
+        });
+
+        // Do not block client save/update while optimizing large images.
+        setImmediate(async () => {
+            try {
+                await optimizeImageFile(uploadedFilePath);
+            } catch (optimizationError) {
+                console.warn("Không thể tối ưu ảnh vừa upload:", optimizationError.message);
+            }
         });
 
     });

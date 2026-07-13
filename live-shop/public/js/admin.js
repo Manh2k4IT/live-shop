@@ -678,15 +678,43 @@ async function refreshDashboard() {
 async function uploadImage(file) {
   if (!file) return "";
 
+  if (!String(file.type || "").toLowerCase().startsWith("image/")) {
+    throw new Error("File đã chọn không phải ảnh hợp lệ");
+  }
+
   const formData = new FormData();
   formData.append("image", file);
 
-  const res = await fetch(API + "/upload", {
-    method: "POST",
-    body: formData
-  });
+  const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timeoutId = controller
+    ? setTimeout(() => controller.abort(), 45000)
+    : null;
 
-  const data = await res.json();
+  let res;
+  try {
+    res = await fetch(API + "/upload", {
+      method: "POST",
+      body: formData,
+      signal: controller ? controller.signal : undefined
+    });
+  } catch (error) {
+    if (controller && error?.name === "AbortError") {
+      throw new Error("Upload ảnh quá lâu, vui lòng thử ảnh nhẹ hơn hoặc thử lại");
+    }
+
+    throw error;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+
+  const raw = await res.text();
+  let data = {};
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch (parseError) {
+    data = { error: raw || "Phản hồi upload không hợp lệ" };
+  }
+
   if (!res.ok) {
     throw new Error(data.error || "Không thể upload ảnh");
   }
