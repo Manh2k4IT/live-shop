@@ -2606,6 +2606,8 @@ app.post("/add", (req, res) => {
 
     }
 
+    const cartReconciledBeforeAdd = reconcileCartStockForProduct(product.id);
+
     const productCategory = getProductCategory(product);
     const preferredImage = typeof requestedImage === "string" && requestedImage.trim()
         ? requestedImage.trim()
@@ -2657,6 +2659,10 @@ app.post("/add", (req, res) => {
     }
 
     if (requestedQty > effectiveStockInfo.stock) {
+
+        if (cartReconciledBeforeAdd) {
+            updateClient();
+        }
 
         return res.status(400).json({
 
