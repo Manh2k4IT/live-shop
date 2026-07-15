@@ -155,6 +155,67 @@ app.use("/uploads", express.static(uploadDir, {
     etag: true
 }));
 
+const derivedImageDir = path.join(uploadDir, ".derived");
+if (!fs.existsSync(derivedImageDir)) {
+    fs.mkdirSync(derivedImageDir, { recursive: true });
+}
+
+app.get("/img", async (req, res) => {
+    const rawSrc = String(req.query.src || "").trim();
+    if (!rawSrc.startsWith("/uploads/")) {
+        return res.status(400).json({ error: "src không hợp lệ" });
+    }
+
+    const sourcePathname = rawSrc.split("?")[0].split("#")[0];
+    const relativeFromUploads = sourcePathname.replace(/^\/uploads\//, "");
+    const safeRelative = path.posix.normalize(relativeFromUploads).replace(/^\.\.(\/|\\|$)+/, "");
+    const sourcePath = path.join(uploadDir, safeRelative);
+
+    if (!sourcePath.startsWith(uploadDir)) {
+        return res.status(400).json({ error: "src không hợp lệ" });
+    }
+
+    if (!fs.existsSync(sourcePath)) {
+        return res.status(404).json({ error: "Không tìm thấy ảnh" });
+    }
+
+    if (!sharp || !imageOptimizeEnabled) {
+        return res.redirect(rawSrc);
+    }
+
+    const requestedWidth = Number(req.query.w);
+    const requestedQuality = Number(req.query.q);
+    const width = Math.max(120, Math.min(imageMaxWidthPx, Number.isFinite(requestedWidth) ? Math.floor(requestedWidth) : 720));
+    const quality = Math.max(50, Math.min(90, Number.isFinite(requestedQuality) ? Math.floor(requestedQuality) : 74));
+
+    try {
+        const stats = await fs.promises.stat(sourcePath);
+        const cacheKey = crypto
+            .createHash("sha1")
+            .update(`${safeRelative}|${stats.mtimeMs}|${width}|${quality}`)
+            .digest("hex");
+        const derivedPath = path.join(derivedImageDir, `${cacheKey}.webp`);
+
+        if (!fs.existsSync(derivedPath)) {
+            await sharp(sourcePath, { failOn: "none" })
+                .rotate()
+                .resize({
+                    width,
+                    withoutEnlargement: true,
+                    fit: "inside"
+                })
+                .webp({ quality, effort: 4 })
+                .toFile(derivedPath);
+        }
+
+        res.set("Cache-Control", `public, max-age=${uploadsCacheMaxAgeSec}, immutable`);
+        res.type("image/webp");
+        return res.sendFile(derivedPath);
+    } catch (error) {
+        return res.redirect(rawSrc);
+    }
+});
+
 const OPTIMIZABLE_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
 async function optimizeImageFile(filePath) {
