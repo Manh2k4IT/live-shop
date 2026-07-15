@@ -1614,7 +1614,7 @@ app.get("/", (req, res) => {
 
 });
 
-app.get("/cart", (req, res) => {
+app.get("/cart-page", (req, res) => {
 
     res.redirect("/shop.html?view=cart#cart");
 
