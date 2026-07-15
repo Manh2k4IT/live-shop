@@ -1299,6 +1299,106 @@ td img{
     background:#10b981;
 }
 
+#orders-view table td{
+    vertical-align:top;
+}
+
+.order-customer-cell{
+    min-width:300px;
+}
+
+.order-customer-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:8px;
+}
+
+.order-customer-name{
+    font-size:15px;
+    font-weight:800;
+    color:#0f172a;
+}
+
+.order-id-chip{
+    display:inline-flex;
+    align-items:center;
+    padding:5px 10px;
+    border-radius:999px;
+    background:#eef2ff;
+    color:#3730a3;
+    font-size:12px;
+    font-weight:700;
+    white-space:nowrap;
+}
+
+.order-items-wrap{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+}
+
+.order-item-pill{
+    display:inline-flex;
+    align-items:center;
+    padding:5px 9px;
+    border-radius:999px;
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    color:#334155;
+    font-size:12px;
+    font-weight:600;
+    line-height:1.25;
+}
+
+.order-phone-cell,
+.order-address-cell,
+.order-time-cell{
+    color:#334155;
+    font-size:14px;
+    font-weight:600;
+}
+
+.order-address-cell{
+    min-width:220px;
+}
+
+.order-total-cell{
+    min-width:210px;
+    border-radius:12px;
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    padding:10px 12px !important;
+}
+
+.order-money-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    font-size:13px;
+    color:#334155;
+    margin-bottom:4px;
+}
+
+.order-money-row strong{
+    color:#0f172a;
+    font-weight:700;
+}
+
+.order-money-row.grand{
+    margin-top:6px;
+    padding-top:7px;
+    border-top:1px dashed #cbd5e1;
+}
+
+.order-money-row.grand strong{
+    color:#be123c;
+    font-size:15px;
+    font-weight:800;
+}
+
 @media(max-width:768px){
     .order-actions{
         grid-template-columns:1fr;
@@ -1310,6 +1410,12 @@ td img{
 
     .order-actions button.delete-order{
         grid-column:auto;
+    }
+
+    .order-customer-cell,
+    .order-address-cell,
+    .order-total-cell{
+        min-width:unset;
     }
 }
 

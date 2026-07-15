@@ -916,6 +916,14 @@ async function loadOrders() {
           confirmed: "Đã xác nhận",
           done: "Hoàn tất"
         }[order.status] || order.status;
+        const subtotal = getOrderSubtotal(order);
+        const shippingFee = getOrderShippingFee(order);
+        const grandTotal = getOrderGrandTotal(order);
+
+        const itemSummary = (order.items || []).map((item) => {
+          const variantPart = item.variantName ? ` (${item.variantName}${item.size ? ` - ${item.size}` : ""})` : (item.size ? ` (${item.size})` : "");
+          return `<span class="order-item-pill">${item.name}${variantPart} x${item.qty}</span>`;
+        }).join("");
 
         const actionButtons = [
           { status: "pending", label: "⏳ Chờ", className: "pending" },
@@ -929,14 +937,21 @@ async function loadOrders() {
 
         return `
           <tr>
-            <td>${order.customer}<br><small>${order.items.map((item) => {
-              const variantPart = item.variantName ? ` (${item.variantName}${item.size ? ` - ${item.size}` : ""})` : (item.size ? ` (${item.size})` : "");
-              return `${item.name}${variantPart} x${item.qty}`;
-            }).join(", ")}<br><span style="color:#475569;font-weight:700">Phí ship: ${getOrderShippingFee(order).toLocaleString()}đ</span></small></td>
-            <td>${order.phone}</td>
-            <td>${order.address}</td>
-            <td>${formatOrderTime(order.createdAt)}</td>
-            <td>${getOrderGrandTotal(order).toLocaleString()}đ</td>
+            <td class="order-customer-cell">
+              <div class="order-customer-top">
+                <span class="order-customer-name">${order.customer || "Khách lẻ"}</span>
+                <span class="order-id-chip">#${order.id}</span>
+              </div>
+              <div class="order-items-wrap">${itemSummary || '<span class="order-item-pill">Không có sản phẩm</span>'}</div>
+            </td>
+            <td class="order-phone-cell">${order.phone || "—"}</td>
+            <td class="order-address-cell">${order.address || "—"}</td>
+            <td class="order-time-cell">${formatOrderTime(order.createdAt)}</td>
+            <td class="order-total-cell">
+              <div class="order-money-row"><span>Tạm tính</span><strong>${subtotal.toLocaleString()}đ</strong></div>
+              <div class="order-money-row"><span>Phí ship</span><strong>${shippingFee.toLocaleString()}đ</strong></div>
+              <div class="order-money-row grand"><span>Tổng thanh toán</span><strong>${grandTotal.toLocaleString()}đ</strong></div>
+            </td>
             <td><span class="order-badge ${order.status}">${statusText}</span></td>
             <td>
               <div class="order-actions">
