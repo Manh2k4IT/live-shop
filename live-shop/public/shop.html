@@ -248,7 +248,6 @@
       aspect-ratio: 3 / 4;
       object-fit: cover;
       display: block;
-      cursor: zoom-in;
     }
 
 
@@ -1158,47 +1157,6 @@
       line-height: 1.6;
     }
 
-    .image-viewer {
-      position: fixed;
-      inset: 0;
-      z-index: 1800;
-      background: rgba(2, 6, 23, 0.92);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-
-    .image-viewer.hidden {
-      display: none;
-    }
-
-    .image-viewer img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-      border-radius: 10px;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
-      background: #0f172a;
-    }
-
-    .image-viewer-close {
-      position: absolute;
-      top: 14px;
-      right: 14px;
-      width: 40px;
-      height: 40px;
-      border: none;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.22);
-      color: #fff;
-      font-size: 24px;
-      line-height: 1;
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-    }
-
     @media (max-width: 900px) {
       .page {
         grid-template-columns: 1fr;
@@ -1482,10 +1440,6 @@
 <body>
   <div id="toast" class="toast"></div>
   <div id="cartPopup" class="cart-popup hidden"></div>
-  <div id="imageViewer" class="image-viewer hidden" onclick="if (event.target === this) closeImageViewer()">
-    <button type="button" class="image-viewer-close" onclick="closeImageViewer()" aria-label="Đóng xem ảnh">×</button>
-    <img id="imageViewerImg" src="" alt="Xem ảnh sản phẩm" loading="eager" decoding="async" />
-  </div>
   <div id="successModal" class="success-modal hidden">
     <div class="success-modal-card">
       <div class="success-modal-icon">✓</div>
@@ -2064,37 +2018,6 @@
       window.location.href = `/shop.html?category=${encodeURIComponent(target)}`;
     }
 
-    function openImageViewer(imageUrl, altText = "Ảnh sản phẩm") {
-      if (!window.matchMedia("(max-width: 900px)").matches) return;
-      const src = String(imageUrl || "").trim();
-      if (!src) return;
-
-      const viewer = document.getElementById("imageViewer");
-      const viewerImg = document.getElementById("imageViewerImg");
-      if (!viewer || !viewerImg) return;
-
-      viewerImg.src = getOptimizedDisplayImageUrl(src, 1280);
-      viewerImg.alt = String(altText || "Ảnh sản phẩm").trim() || "Ảnh sản phẩm";
-      viewer.classList.remove("hidden");
-
-      if (!imageViewerHistoryActive) {
-        history.pushState({ imageViewerOpen: true }, "", window.location.href);
-        imageViewerHistoryActive = true;
-      }
-    }
-
-    function closeImageViewer(fromPopState = false) {
-      const viewer = document.getElementById("imageViewer");
-      if (viewer) viewer.classList.add("hidden");
-
-      if (!fromPopState && imageViewerHistoryActive && history.state?.imageViewerOpen) {
-        imageViewerHistoryActive = false;
-        history.back();
-      } else {
-        imageViewerHistoryActive = false;
-      }
-    }
-
     function getOrderedCategories(items) {
       const seen = new Set();
       const ordered = [];
@@ -2127,7 +2050,6 @@
     let forceProductReloadOnNextRefresh = false;
     let quickOrderMode = false;
     let cartPopupHistoryActive = false;
-    let imageViewerHistoryActive = false;
     let quickOrderState = {
       productId: null,
       variantIndex: 0,
@@ -2273,12 +2195,10 @@
 
       const html = displayProducts.map((p) => {
         const productCategory = normalizeCategory(p.category);
-        const selectedImageOriginal = getSelectedImageForProduct(p.id) || p.image || "https://placehold.co/300x220?text=No+Image";
-        const selectedImageDisplay = getOptimizedDisplayImageUrl(selectedImageOriginal, 720);
         return `
           <div class="product-card">
             <div class="product-image-wrap">
-              <img class="product-main-image" src="${selectedImageDisplay}" data-origin-src="${String(selectedImageOriginal).replace(/"/g, "&quot;")}" alt="${p.name}" loading="lazy" decoding="async" onclick='openImageViewer(${JSON.stringify(selectedImageOriginal)}, ${JSON.stringify(p.name || "Ảnh sản phẩm")})' />
+              <img class="product-main-image" src="${getOptimizedDisplayImageUrl(getSelectedImageForProduct(p.id) || p.image || "https://placehold.co/300x220?text=No+Image", 720)}" alt="${p.name}" loading="lazy" decoding="async" />
               <button class="category-cart-btn" onclick="openCategoryPage('${productCategory.replace(/'/g, "\\'")}')">${productCategory}</button>
             </div>
             <div class="product-name">${p.name}</div>
@@ -2408,12 +2328,6 @@
     }
 
     window.addEventListener("popstate", () => {
-      const viewer = document.getElementById("imageViewer");
-      if (viewer && !viewer.classList.contains("hidden")) {
-        closeImageViewer(true);
-        return;
-      }
-
       const popup = document.getElementById("cartPopup");
       if (!popup || popup.classList.contains("hidden")) return;
       closeCartPopup(true);
@@ -2718,8 +2632,6 @@
     window.checkoutPopup = checkoutPopup;
     window.changeCartVariant = changeCartVariant;
     window.changeCartSize = changeCartSize;
-    window.openImageViewer = openImageViewer;
-    window.closeImageViewer = closeImageViewer;
 
     setupShopLogo();
     applyPageView();
