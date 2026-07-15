@@ -465,6 +465,11 @@ const DEFAULT_SETTINGS = {
     shopPublicUrl
 };
 
+function getShippingFeeBySubtotal(subtotal) {
+    const safeSubtotal = Math.max(0, Math.floor(Number(subtotal) || 0));
+    return safeSubtotal < 1000000 ? 30000 : 35000;
+}
+
 function cloneData(value) {
 
     return JSON.parse(JSON.stringify(value));
@@ -1822,7 +1827,9 @@ app.post("/checkout", (req, res) => {
         });
     }
 
-    const total = validItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const subtotal = validItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const shippingFee = getShippingFeeBySubtotal(subtotal);
+    const total = subtotal + shippingFee;
 
     const newOrder = {
 
@@ -1833,6 +1840,8 @@ app.post("/checkout", (req, res) => {
         phone,
 
         address,
+        subtotal,
+        shippingFee,
         total,
         status: "pending",
         createdAt: new Date().toISOString(),
@@ -1907,12 +1916,16 @@ app.post("/checkout/quick", (req, res) => {
 
     decrementVariantStock(product, effectiveVariantIndex, effectiveSize, finalQty);
 
-    const total = normalizeNumberValue(product.price, 0) * finalQty;
+    const subtotal = normalizeNumberValue(product.price, 0) * finalQty;
+    const shippingFee = getShippingFeeBySubtotal(subtotal);
+    const total = subtotal + shippingFee;
     const newOrder = {
         id: Date.now(),
         customer,
         phone,
         address,
+        subtotal,
+        shippingFee,
         total,
         status: "pending",
         createdAt: new Date().toISOString(),

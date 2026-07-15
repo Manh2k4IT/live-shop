@@ -259,6 +259,34 @@ function formatOrderTime(value) {
   });
 }
 
+function getOrderSubtotal(order) {
+  const subtotal = Number(order?.subtotal);
+  if (Number.isFinite(subtotal) && subtotal >= 0) return subtotal;
+
+  const total = Number(order?.total || 0);
+  const shippingFee = Number(order?.shippingFee);
+  if (Number.isFinite(shippingFee) && shippingFee >= 0) {
+    return Math.max(0, total - shippingFee);
+  }
+
+  return Math.max(0, total);
+}
+
+function getOrderShippingFee(order) {
+  const shippingFee = Number(order?.shippingFee);
+  if (Number.isFinite(shippingFee) && shippingFee >= 0) return shippingFee;
+
+  const subtotal = getOrderSubtotal(order);
+  if (subtotal <= 0) return 0;
+  return subtotal < 1000000 ? 30000 : 35000;
+}
+
+function getOrderGrandTotal(order) {
+  const subtotal = getOrderSubtotal(order);
+  const shippingFee = getOrderShippingFee(order);
+  return subtotal + shippingFee;
+}
+
 function resetProductForm() {
   const currentCategory = getAdminCategory();
   const name = document.getElementById("name");
@@ -358,12 +386,14 @@ function exportOrdersExcel() {
   }
 
   const rows = orders.map((order) => ({
+    "Tạm tính": getOrderSubtotal(order).toLocaleString("vi-VN") + "đ",
+    "Phí ship": getOrderShippingFee(order).toLocaleString("vi-VN") + "đ",
+    "Tổng thanh toán": getOrderGrandTotal(order).toLocaleString("vi-VN") + "đ",
     "Mã đơn": order.id || "",
     "Khách hàng": order.customer || "",
     "Số điện thoại": order.phone || "",
     "Địa chỉ": order.address || "",
     "Thời gian": formatOrderTime(order.createdAt),
-    "Tổng tiền": Number(order.total || 0).toLocaleString("vi-VN") + "đ",
     "Trạng thái": {
       pending: "Chờ xử lý",
       confirmed: "Đã xác nhận",
@@ -403,7 +433,8 @@ function exportOrdersPDF() {
     order.phone || "",
     order.address || "",
     formatOrderTime(order.createdAt),
-    Number(order.total || 0).toLocaleString("vi-VN") + "đ",
+    getOrderShippingFee(order).toLocaleString("vi-VN") + "đ",
+    getOrderGrandTotal(order).toLocaleString("vi-VN") + "đ",
     {
       pending: "Chờ xử lý",
       confirmed: "Đã xác nhận",
@@ -449,7 +480,8 @@ function exportOrdersPDF() {
               <th>SĐT</th>
               <th>Địa chỉ</th>
               <th>Thời gian</th>
-              <th>Tổng tiền</th>
+              <th>Phí ship</th>
+              <th>Tổng thanh toán</th>
               <th>Trạng thái</th>
               <th>Sản phẩm</th>
             </tr>
@@ -900,11 +932,11 @@ async function loadOrders() {
             <td>${order.customer}<br><small>${order.items.map((item) => {
               const variantPart = item.variantName ? ` (${item.variantName}${item.size ? ` - ${item.size}` : ""})` : (item.size ? ` (${item.size})` : "");
               return `${item.name}${variantPart} x${item.qty}`;
-            }).join(", ")}</small></td>
+            }).join(", ")}<br><span style="color:#475569;font-weight:700">Phí ship: ${getOrderShippingFee(order).toLocaleString()}đ</span></small></td>
             <td>${order.phone}</td>
             <td>${order.address}</td>
             <td>${formatOrderTime(order.createdAt)}</td>
-            <td>${Number(order.total || 0).toLocaleString()}đ</td>
+            <td>${getOrderGrandTotal(order).toLocaleString()}đ</td>
             <td><span class="order-badge ${order.status}">${statusText}</span></td>
             <td>
               <div class="order-actions">
