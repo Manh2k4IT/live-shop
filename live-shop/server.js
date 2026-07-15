@@ -2546,6 +2546,11 @@ app.get("/cart", (req, res) => {
 
 });
 
+app.get("/api/cart", (req, res) => {
+    res.json(getSortedCart(getRequestedCategory(req), req.sessionId));
+
+});
+
 app.post("/add", (req, res) => {
 
     const {

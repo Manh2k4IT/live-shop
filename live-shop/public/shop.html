@@ -1953,7 +1953,7 @@
 
     function getCategoryCartUrl() {
       const category = getCurrentCategory();
-      return category ? `${API}/cart?category=${encodeURIComponent(category)}` : `${API}/cart`;
+      return category ? `${API}/api/cart?category=${encodeURIComponent(category)}` : `${API}/api/cart`;
     }
 
     function compactCartDuplicates(rawItems) {
