@@ -2301,21 +2301,49 @@ app.post("/upload",
         }
 
         const uploadedFilePath = req.file.path;
+        let responseFilePath = uploadedFilePath;
+        let responseFileName = req.file.filename;
+
+        if (sharp) {
+            try {
+                const parsed = path.parse(req.file.filename);
+                const webpFileName = `${parsed.name}.webp`;
+                const webpFilePath = path.join(uploadDir, webpFileName);
+
+                await sharp(uploadedFilePath, { failOn: "none" })
+                    .rotate()
+                    .resize({
+                        width: imageMaxWidthPx,
+                        withoutEnlargement: true,
+                        fit: "inside"
+                    })
+                    .webp({ quality: imageQuality, effort: 4 })
+                    .toFile(webpFilePath);
+
+                await fs.promises.unlink(uploadedFilePath).catch(() => {});
+                responseFilePath = webpFilePath;
+                responseFileName = webpFileName;
+            } catch (convertError) {
+                console.warn("Không thể chuyển ảnh sang webp khi upload:", convertError.message);
+            }
+        }
 
         res.json({
 
-            url: "/uploads/" + req.file.filename
+            url: "/uploads/" + responseFileName
 
         });
 
-        // Do not block client save/update while optimizing large images.
-        setImmediate(async () => {
-            try {
-                await optimizeImageFile(uploadedFilePath);
-            } catch (optimizationError) {
-                console.warn("Không thể tối ưu ảnh vừa upload:", optimizationError.message);
-            }
-        });
+        if (path.extname(responseFilePath).toLowerCase() !== ".webp") {
+            // Do not block client save/update while optimizing large images.
+            setImmediate(async () => {
+                try {
+                    await optimizeImageFile(responseFilePath);
+                } catch (optimizationError) {
+                    console.warn("Không thể tối ưu ảnh vừa upload:", optimizationError.message);
+                }
+            });
+        }
 
     });
 
