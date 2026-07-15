@@ -470,6 +470,109 @@ function getShippingFeeBySubtotal(subtotal) {
     return safeSubtotal < 1000000 ? 30000 : 35000;
 }
 
+const ORDER_DAY_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+});
+
+function normalizePhoneForOrderMerge(value) {
+    let digits = String(value || "").replace(/\D+/g, "");
+    if (digits.startsWith("84") && digits.length >= 10) {
+        digits = `0${digits.slice(2)}`;
+    }
+    return digits;
+}
+
+function getOrderDayKey(value) {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+
+    const parts = ORDER_DAY_FORMATTER.formatToParts(date);
+    const day = parts.find((part) => part.type === "day")?.value || "";
+    const month = parts.find((part) => part.type === "month")?.value || "";
+    const year = parts.find((part) => part.type === "year")?.value || "";
+    if (!day || !month || !year) return "";
+
+    return `${year}-${month}-${day}`;
+}
+
+function mapOrderItemSnapshot(item) {
+    return {
+        name: normalizeTextValue(item?.name, "Sản phẩm"),
+        qty: Math.max(1, Math.floor(Number(item?.qty) || 1)),
+        sku: normalizeTextValue(item?.sku, ""),
+        category: normalizeTextValue(item?.category, ""),
+        variantName: normalizeTextValue(item?.variantName, ""),
+        size: normalizeTextValue(item?.selectedSize || item?.size, "")
+    };
+}
+
+function mergeOrderItems(existingItems, incomingItems) {
+    const mergedMap = new Map();
+
+    const addItem = (rawItem) => {
+        const item = mapOrderItemSnapshot(rawItem);
+        const key = [item.sku, item.name, item.category, item.variantName, item.size]
+            .map((value) => String(value || "").toLowerCase().trim())
+            .join("||");
+
+        const existed = mergedMap.get(key);
+        if (existed) {
+            existed.qty += item.qty;
+            return;
+        }
+
+        mergedMap.set(key, item);
+    };
+
+    (Array.isArray(existingItems) ? existingItems : []).forEach(addItem);
+    (Array.isArray(incomingItems) ? incomingItems : []).forEach(addItem);
+
+    return [...mergedMap.values()];
+}
+
+function findMergeableOrderByPhoneAndDay(phone, dateValue) {
+    const normalizedPhone = normalizePhoneForOrderMerge(phone);
+    const dayKey = getOrderDayKey(dateValue);
+    if (!normalizedPhone || !dayKey) return null;
+
+    return orders.find((order) => {
+        if (String(order?.status || "").toLowerCase() === "done") return false;
+        return normalizePhoneForOrderMerge(order?.phone) === normalizedPhone
+            && getOrderDayKey(order?.createdAt) === dayKey;
+    }) || null;
+}
+
+function mergeIntoExistingOrder(targetOrder, payload) {
+    const {
+        customer,
+        phone,
+        address,
+        subtotalIncrease,
+        incomingItems,
+        updatedAt
+    } = payload || {};
+
+    const currentSubtotal = Math.max(0, Math.floor(Number(targetOrder?.subtotal) || 0));
+    const safeIncrease = Math.max(0, Math.floor(Number(subtotalIncrease) || 0));
+    const mergedSubtotal = currentSubtotal + safeIncrease;
+
+    targetOrder.customer = normalizeTextValue(customer, targetOrder.customer || "Khách lẻ");
+    targetOrder.phone = normalizeTextValue(phone, targetOrder.phone || "");
+    targetOrder.address = normalizeTextValue(address, targetOrder.address || "");
+    targetOrder.subtotal = mergedSubtotal;
+    targetOrder.shippingFee = getShippingFeeBySubtotal(mergedSubtotal);
+    targetOrder.total = targetOrder.subtotal + targetOrder.shippingFee;
+    targetOrder.items = mergeOrderItems(targetOrder.items, incomingItems);
+    targetOrder.updatedAt = updatedAt || new Date().toISOString();
+
+    orders = [targetOrder, ...orders.filter((order) => order !== targetOrder)];
+
+    return targetOrder;
+}
+
 function cloneData(value) {
 
     return JSON.parse(JSON.stringify(value));
@@ -1828,35 +1931,47 @@ app.post("/checkout", (req, res) => {
     }
 
     const subtotal = validItems.reduce((sum, item) => sum + item.price * item.qty, 0);
-    const shippingFee = getShippingFeeBySubtotal(subtotal);
-    const total = subtotal + shippingFee;
+    const orderItems = validItems.map(mapOrderItemSnapshot);
+    const nowIso = new Date().toISOString();
+    const mergeTarget = findMergeableOrderByPhoneAndDay(phone, nowIso);
 
-    const newOrder = {
+    let responseOrder;
 
-        id: Date.now(),
+    if (mergeTarget) {
+        responseOrder = mergeIntoExistingOrder(mergeTarget, {
+            customer,
+            phone,
+            address,
+            subtotalIncrease: subtotal,
+            incomingItems: orderItems,
+            updatedAt: nowIso
+        });
+    } else {
+        const shippingFee = getShippingFeeBySubtotal(subtotal);
+        const total = subtotal + shippingFee;
 
-        customer,
+        const newOrder = {
 
-        phone,
+            id: Date.now(),
 
-        address,
-        subtotal,
-        shippingFee,
-        total,
-        status: "pending",
-        createdAt: new Date().toISOString(),
-        items: validItems.map(item => ({
-            name: item.name,
-            qty: item.qty,
-            sku: item.sku || "",
-            category: item.category || "",
-            variantName: item.variantName || "",
-            size: item.selectedSize || ""
-        }))
+            customer,
 
-    };
+            phone,
 
-    orders.unshift(newOrder);
+            address,
+            subtotal,
+            shippingFee,
+            total,
+            status: "pending",
+            createdAt: nowIso,
+            items: orderItems
+
+        };
+
+        orders.unshift(newOrder);
+        responseOrder = newOrder;
+    }
+
     if (category) {
         cart = cart.filter(item => !(normalizeSessionId(item.sessionId) === sessionId && normalizeCategoryName(item.category) === category));
     } else {
@@ -1865,12 +1980,13 @@ app.post("/checkout", (req, res) => {
     updateClient();
 
     res.json({
-        ...newOrder,
+        ...responseOrder,
+        merged: Boolean(mergeTarget),
         skippedItems,
         adjustedItems,
         message: skippedItems || adjustedItems
             ? `Đã bỏ qua ${skippedItems} sản phẩm hết hàng${adjustedItems ? ` và tự điều chỉnh ${adjustedItems} sản phẩm vượt tồn` : ""}`
-            : ""
+            : (mergeTarget ? "Đơn cùng ngày đã được gộp theo số điện thoại" : "")
     });
 
 });
@@ -1917,34 +2033,56 @@ app.post("/checkout/quick", (req, res) => {
     decrementVariantStock(product, effectiveVariantIndex, effectiveSize, finalQty);
 
     const subtotal = normalizeNumberValue(product.price, 0) * finalQty;
-    const shippingFee = getShippingFeeBySubtotal(subtotal);
-    const total = subtotal + shippingFee;
-    const newOrder = {
-        id: Date.now(),
-        customer,
-        phone,
-        address,
-        subtotal,
-        shippingFee,
-        total,
-        status: "pending",
-        createdAt: new Date().toISOString(),
-        items: [{
-            name: product.name,
-            qty: finalQty,
-            sku: product.sku || "",
-            category: getProductCategory(product),
-            variantName: effectiveVariantName || "",
-            size: effectiveSize || ""
-        }]
-    };
+    const nowIso = new Date().toISOString();
+    const quickItems = [mapOrderItemSnapshot({
+        name: product.name,
+        qty: finalQty,
+        sku: product.sku || "",
+        category: getProductCategory(product),
+        variantName: effectiveVariantName || "",
+        size: effectiveSize || ""
+    })];
+    const mergeTarget = findMergeableOrderByPhoneAndDay(phone, nowIso);
 
-    orders.unshift(newOrder);
+    let responseOrder;
+
+    if (mergeTarget) {
+        responseOrder = mergeIntoExistingOrder(mergeTarget, {
+            customer,
+            phone,
+            address,
+            subtotalIncrease: subtotal,
+            incomingItems: quickItems,
+            updatedAt: nowIso
+        });
+    } else {
+        const shippingFee = getShippingFeeBySubtotal(subtotal);
+        const total = subtotal + shippingFee;
+        const newOrder = {
+            id: Date.now(),
+            customer,
+            phone,
+            address,
+            subtotal,
+            shippingFee,
+            total,
+            status: "pending",
+            createdAt: nowIso,
+            items: quickItems
+        };
+
+        orders.unshift(newOrder);
+        responseOrder = newOrder;
+    }
+
     updateClient();
 
     res.json({
-        ...newOrder,
-        message: "Đã tạo đơn đặt nhanh thành công"
+        ...responseOrder,
+        merged: Boolean(mergeTarget),
+        message: mergeTarget
+            ? "Đơn cùng ngày đã được gộp theo số điện thoại"
+            : "Đã tạo đơn đặt nhanh thành công"
     });
 
 });
