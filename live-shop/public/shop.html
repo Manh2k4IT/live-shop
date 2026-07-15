@@ -300,13 +300,16 @@
       justify-content: flex-end;
       align-items: center;
       gap: 8px;
-      flex-wrap: nowrap;
-      width: auto;
+      flex-wrap: wrap;
+      width: min(230px, 100%);
     }
 
     .product-actions .btn {
-      min-width: 96px;
+      min-width: 0;
+      flex: 1 1 100px;
+      width: 100%;
       padding: 9px 12px;
+      white-space: nowrap;
     }
 
     .price-block {
