@@ -179,8 +179,18 @@ app.get("/img", async (req, res) => {
         return res.status(404).json({ error: "Không tìm thấy ảnh" });
     }
 
+    const sendSourceImage = () => {
+        res.set("Cache-Control", `public, max-age=${uploadsCacheMaxAgeSec}, immutable`);
+        return res.sendFile(sourcePath, (err) => {
+            if (err && !res.headersSent) {
+                return res.status(404).json({ error: "Không thể tải ảnh" });
+            }
+            return undefined;
+        });
+    };
+
     if (!sharp || !imageOptimizeEnabled) {
-        return res.redirect(rawSrc);
+        return sendSourceImage();
     }
 
     const requestedWidth = Number(req.query.w);
@@ -213,10 +223,10 @@ app.get("/img", async (req, res) => {
         return res.sendFile(derivedPath, (err) => {
             if (!err) return;
             if (res.headersSent) return;
-            return res.redirect(rawSrc);
+            return sendSourceImage();
         });
     } catch (error) {
-        return res.redirect(rawSrc);
+        return sendSourceImage();
     }
 });
 
