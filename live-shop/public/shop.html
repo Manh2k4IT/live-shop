@@ -1852,7 +1852,7 @@
       const itemCategory = card.dataset.itemCategory || getCurrentCategory();
       const currentKey = card.dataset.variantKey || String(variantKey || "default");
       const currentItemKey = card.dataset.itemKey || String(itemKey || "");
-      const currentImage = card.querySelector(".popup-product-image")?.getAttribute("src") || "";
+      const currentImage = card.querySelector(".popup-product-image")?.dataset?.originSrc || card.querySelector(".popup-product-image")?.getAttribute("src") || "";
       const currentVariantName = card.dataset.variantName || "";
       const nextSize = String(sizeValue || "").trim();
       const variantIndex = Number(getPopupSelectedVariantIndex(id, currentKey, sizeKey, currentItemKey, getVariantImages(productsById.get(id) || {}), currentImage));
@@ -2428,6 +2428,7 @@
           item.image || ""
         );
         const selectedVariantImage = variants[selectedVariantIndex] || item.image || product?.image || "https://placehold.co/80x80?text=No+Image";
+        const selectedVariantImageDisplay = getOptimizedDisplayImageUrl(selectedVariantImage, 420);
         const selectedVariantName = item.variantName || getVariantDisplayName(product || item, selectedVariantIndex, selectedVariantImage);
         const sizes = getAvailableSizesByVariant(product || item, selectedVariantIndex, selectedSize);
         const finalSelectedSize = sizes.find((size) => size.toLowerCase() === selectedSize.toLowerCase()) || sizes[0] || selectedSize;
@@ -2439,7 +2440,7 @@
           <div class="popup-product-card ${isEditor ? "is-editor" : "is-summary"}" data-product-id="${item.id}" data-variant-key="${String(item.variantKey || "default").replace(/"/g, "&quot;")}" data-size-key="${String(item.sizeKey || "size:default").replace(/"/g, "&quot;")}" data-item-key="${String(item.itemKey || "").replace(/"/g, "&quot;")}" data-item-qty="${item.qty}" data-item-category="${String(item.category || "").replace(/"/g, "&quot;")}" data-variant-name="${String(selectedVariantName || "").replace(/"/g, "&quot;")}" data-selected-size="${String(finalSelectedSize || "").replace(/"/g, "&quot;")}" data-combo-stock="${comboStock}">
             <button class="popup-remove" onclick='removeItemPopup(${item.id}, ${JSON.stringify(item.variantKey || "default")}, ${JSON.stringify(item.sizeKey || "size:default")}, ${JSON.stringify(item.itemKey || "")})' title="Bỏ sản phẩm này">✕</button>
             <div class="popup-product-head">
-              <img class="popup-product-image" src="${selectedVariantImage}" alt="${item.name}" loading="lazy" decoding="async" />
+              <img class="popup-product-image" src="${selectedVariantImageDisplay}" data-origin-src="${String(selectedVariantImage).replace(/"/g, "&quot;")}" alt="${item.name}" loading="lazy" decoding="async" />
               <div>
                 <div class="popup-price-wrap">
                   ${discountPercent > 0 ? `<span class="popup-discount-badge">-${discountPercent}%</span>` : ""}
@@ -2472,7 +2473,7 @@
                     title="${isOut ? `${getVariantDisplayName(product || item, index, img)} - Đã hết hàng` : getVariantDisplayName(product || item, index, img)}"
                   >
                     <div class="popup-variant-image-wrap">
-                      <img src="${img}" alt="${getVariantDisplayName(product || item, index, img)}" loading="lazy" decoding="async" />
+                      <img src="${getOptimizedDisplayImageUrl(img, 240)}" alt="${getVariantDisplayName(product || item, index, img)}" loading="lazy" decoding="async" />
                       ${isOut ? '<span class="popup-variant-soldout">Đã hết hàng</span>' : ""}
                     </div>
                     <span class="popup-variant-label">${getVariantDisplayName(product || item, index, img)}</span>
@@ -2834,6 +2835,7 @@
       const variants = getVariantImages(product);
       const selectedVariantIndex = getQuickOrderSelectedVariantIndex(product);
       const selectedImage = variants[selectedVariantIndex] || product.image || "https://placehold.co/80x80?text=No+Image";
+      const selectedImageDisplay = getOptimizedDisplayImageUrl(selectedImage, 460);
       const selectedVariantName = getVariantDisplayName(product, selectedVariantIndex, selectedImage);
       const sizes = getAvailableSizesByVariant(product, selectedVariantIndex);
       const selectedSize = quickOrderState.size || sizes[0] || "";
@@ -2848,7 +2850,7 @@
       popupBody.innerHTML = `
         <div class="popup-product-card is-editor quick-order-card" data-product-id="${product.id}">
           <div class="popup-product-head">
-            <img class="popup-product-image" src="${selectedImage}" alt="${product.name}" loading="lazy" decoding="async" />
+            <img class="popup-product-image" src="${selectedImageDisplay}" data-origin-src="${String(selectedImage).replace(/"/g, "&quot;")}" alt="${product.name}" loading="lazy" decoding="async" />
             <div>
               <div class="popup-price-wrap">
                 ${discountPercent > 0 ? `<span class="popup-discount-badge">-${discountPercent}%</span>` : ""}
@@ -2878,7 +2880,7 @@
                     title="${isOut ? `${getVariantDisplayName(product, index, img)} - Đã hết hàng` : getVariantDisplayName(product, index, img)}"
                   >
                     <div class="popup-variant-image-wrap">
-                      <img src="${img}" alt="${getVariantDisplayName(product, index, img)}" loading="lazy" decoding="async" />
+                      <img src="${getOptimizedDisplayImageUrl(img, 240)}" alt="${getVariantDisplayName(product, index, img)}" loading="lazy" decoding="async" />
                       ${isOut ? '<span class="popup-variant-soldout">Đã hết hàng</span>' : ""}
                     </div>
                     <span class="popup-variant-label">${getVariantDisplayName(product, index, img)}</span>
