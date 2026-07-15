@@ -949,12 +949,12 @@ async function loadOrders() {
             <td><span class="order-badge ${order.status}">${statusText}</span></td>
             <td>
               <div class="order-actions">
-                <select class="order-status-select ${order.status}" onchange="updateOrderStatus(${order.id}, this.value)">
+                <select class="order-status-select ${order.status}" data-current-status="${order.status}" onchange="handleOrderAction(${order.id}, this)">
                   <option value="pending" ${order.status === "pending" ? "selected" : ""}>⏳ Chờ xử lý</option>
                   <option value="confirmed" ${order.status === "confirmed" ? "selected" : ""}>✓ Đã xác nhận</option>
                   <option value="done" ${order.status === "done" ? "selected" : ""}>✅ Hoàn tất</option>
+                  <option value="delete">🗑️ Xóa đơn</option>
                 </select>
-                <button class="delete-order" type="button" onclick="deleteOrder(${order.id})" title="Xóa đơn hàng">🗑️</button>
               </div>
             </td>
           </tr>
@@ -972,6 +972,28 @@ async function loadOrders() {
   }
 }
 
+async function handleOrderAction(id, selectEl) {
+  const nextAction = selectEl?.value;
+  const currentStatus = selectEl?.dataset?.currentStatus || "pending";
+
+  if (!nextAction) return;
+
+  if (nextAction === "delete") {
+    const deleted = await deleteOrder(id);
+    if (!deleted && selectEl) {
+      selectEl.value = currentStatus;
+    }
+    return;
+  }
+
+  const updated = await updateOrderStatus(id, nextAction);
+  if (updated && selectEl) {
+    selectEl.dataset.currentStatus = nextAction;
+  } else if (selectEl) {
+    selectEl.value = currentStatus;
+  }
+}
+
 async function updateOrderStatus(id, status) {
   try {
     const res = await fetch(API + `/order/${id}`, {
@@ -986,14 +1008,16 @@ async function updateOrderStatus(id, status) {
 
     showToast("Đã cập nhật trạng thái đơn hàng");
     await refreshDashboard();
+    return true;
   } catch (error) {
     console.error(error);
     showToast("Lỗi cập nhật đơn hàng");
+    return false;
   }
 }
 
 async function deleteOrder(id) {
-  if (!confirm("Bạn có chắc muốn xóa đơn hàng này?")) return;
+  if (!confirm("Bạn có chắc muốn xóa đơn hàng này?")) return false;
 
   try {
     const res = await fetch(API + `/order/${id}`, {
@@ -1004,14 +1028,16 @@ async function deleteOrder(id) {
 
     if (!res.ok && data.error) {
       showToast(data.error);
-      return;
+      return false;
     }
 
     showToast("Đã xóa đơn hàng");
     await refreshDashboard();
+    return true;
   } catch (error) {
     console.error(error);
     showToast("Lỗi khi xóa đơn hàng");
+    return false;
   }
 }
 

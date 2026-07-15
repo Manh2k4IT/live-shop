@@ -31,13 +31,10 @@ body{
     padding:24px 18px;
     display:flex;
     flex-direction:column;
-    gap:24px;
-    position:fixed;
-    top:0;
-    left:0;
-    height:100vh;
-    overflow-y:auto;
-    z-index:100;
+}
+
+.brand{
+    margin-bottom:18px;
 }
 
 .brand h2{
@@ -1258,20 +1255,6 @@ td img{
     background:#ecfdf3;
     border-color:#a7f3d0;
     color:#047857;
-}
-
-.order-actions button.delete-order{
-    background:#dc2626;
-    color:#ffffff;
-    border:1px solid #b91c1c;
-    font-weight:800;
-    min-height:34px;
-    border-radius:10px;
-}
-
-.order-actions button.delete-order:hover{
-    background:#b91c1c;
-    color:#ffffff;
 }
 
 #orders-view table td{
