@@ -553,6 +553,7 @@
       font-weight: 800;
       color: #b91c1c;
       text-align: right;
+      line-height: 1.45;
     }
 
     .btn-buy-red {
@@ -1036,17 +1037,23 @@
     }
 
     .cart-popup-total {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
+      display: grid;
+      gap: 4px;
       padding: 0 0 8px;
-      font-weight: 700;
-      color: #374151;
     }
 
-    .cart-popup-total span:last-child {
+    .cart-popup-total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+      color: #374151;
+      font-size: 14px;
+    }
+
+    .cart-popup-total-row.grand span:last-child {
       color: #e11d48;
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 800;
     }
 
@@ -1408,7 +1415,7 @@
         padding: 10px;
       }
 
-      .cart-popup-total span:last-child {
+      .cart-popup-total-row.grand span:last-child {
         font-size: 22px;
       }
 
@@ -1991,6 +1998,10 @@
       return raw || "Khác";
     }
 
+    function getShippingFee(subtotal) {
+      return Number(subtotal || 0) < 1000000 ? 30000 : 35000;
+    }
+
     function openCategoryPage(category) {
       const target = normalizeCategory(category);
       window.location.href = `/shop.html?category=${encodeURIComponent(target)}`;
@@ -2488,6 +2499,9 @@
         `;
       });
 
+      const shippingFee = getShippingFee(total);
+      const finalTotal = total + shippingFee;
+
       html += `
         <div class="cart-popup-form">
           <input id="popupCustomerName" placeholder="Họ tên khách" required />
@@ -2496,12 +2510,22 @@
         </div>
         <div class="cart-popup-footer">
           <div class="cart-popup-total">
-            <span>Tổng tiền</span>
-            <span>${total.toLocaleString()}đ</span>
+            <div class="cart-popup-total-row">
+              <span>Tạm tính</span>
+              <span>${total.toLocaleString()}đ</span>
+            </div>
+            <div class="cart-popup-total-row">
+              <span>Phí ship</span>
+              <span>${shippingFee.toLocaleString()}đ</span>
+            </div>
+            <div class="cart-popup-total-row grand">
+              <span>Tổng thanh toán</span>
+              <span>${finalTotal.toLocaleString()}đ</span>
+            </div>
           </div>
           <button class="cart-popup-buy" type="button" onclick="checkoutPopup()">
             <span>Mua ngay</span>
-            <span class="cart-popup-buy-sub">${total.toLocaleString()}đ | Freeship</span>
+            <span class="cart-popup-buy-sub">${finalTotal.toLocaleString()}đ (đã gồm ship ${shippingFee.toLocaleString()}đ)</span>
           </button>
         </div>
       `;
@@ -2760,6 +2784,9 @@
         `;
       }).join("");
 
+      const shippingFee = getShippingFee(total);
+      const finalTotal = total + shippingFee;
+
       html += `
         <div class="cart-total">
           <span>Tổng tiền</span>
@@ -2770,7 +2797,7 @@
           <input id="customerName" placeholder="Họ tên khách" required />
           <input id="customerPhone" placeholder="Số điện thoại" required />
           <input id="customerAddress" placeholder="Địa chỉ nhận hàng" required />
-          <div class="checkout-submit-total">Tổng tiền: ${total.toLocaleString()}đ</div>
+          <div class="checkout-submit-total">Tạm tính: ${total.toLocaleString()}đ<br/>Phí ship: ${shippingFee.toLocaleString()}đ<br/>Tổng thanh toán: ${finalTotal.toLocaleString()}đ</div>
           <button class="btn btn-buy-red" type="submit">Mua Hàng</button>
         </form>
       `;
@@ -2803,6 +2830,8 @@
       const price = Number(product?.price || 0);
       const oldPrice = Number(product?.oldPrice || price);
       const lineTotal = price * Math.max(1, Number(quickOrderState.qty || 1));
+      const shippingFee = getShippingFee(lineTotal);
+      const finalTotal = lineTotal + shippingFee;
       const discountPercent = oldPrice > price ? Math.round((1 - price / oldPrice) * 100) : 0;
 
       popupBody.innerHTML = `
@@ -2876,7 +2905,7 @@
             <input id="quickCustomerName" placeholder="Họ tên khách" required />
             <input id="quickCustomerPhone" placeholder="Số điện thoại" required />
             <input id="quickCustomerAddress" placeholder="Địa chỉ nhận hàng" required />
-            <div class="checkout-submit-total">Tổng tiền: ${lineTotal.toLocaleString()}đ</div>
+            <div class="checkout-submit-total">Tạm tính: ${lineTotal.toLocaleString()}đ<br/>Phí ship: ${shippingFee.toLocaleString()}đ<br/>Tổng thanh toán: ${finalTotal.toLocaleString()}đ</div>
             <button class="btn btn-buy-red" type="submit" ${stock <= 0 ? "disabled" : ""}>Mua Hàng</button>
           </form>
         </div>
