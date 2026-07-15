@@ -2001,14 +2001,6 @@
       return raw || "Khác";
     }
 
-    function getOptimizedDisplayImageUrl(rawUrl, width = 640) {
-      const src = String(rawUrl || "").trim();
-      if (!src) return "";
-      if (!src.startsWith("/uploads/")) return src;
-      const safeWidth = Math.max(160, Math.min(1400, Math.floor(Number(width) || 640)));
-      return `/img?src=${encodeURIComponent(src)}&w=${safeWidth}&q=74`;
-    }
-
     function getShippingFee(subtotal) {
       return Number(subtotal || 0) < 1000000 ? 30000 : 35000;
     }
@@ -2198,7 +2190,7 @@
         return `
           <div class="product-card">
             <div class="product-image-wrap">
-              <img class="product-main-image" src="${getOptimizedDisplayImageUrl(getSelectedImageForProduct(p.id) || p.image || "https://placehold.co/300x220?text=No+Image", 720)}" alt="${p.name}" loading="lazy" decoding="async" />
+              <img class="product-main-image" src="${getSelectedImageForProduct(p.id) || p.image || "https://placehold.co/300x220?text=No+Image"}" alt="${p.name}" loading="lazy" decoding="async" />
               <button class="category-cart-btn" onclick="openCategoryPage('${productCategory.replace(/'/g, "\\'")}')">${productCategory}</button>
             </div>
             <div class="product-name">${p.name}</div>
