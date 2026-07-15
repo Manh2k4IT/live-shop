@@ -210,11 +210,7 @@ app.get("/img", async (req, res) => {
 
         res.set("Cache-Control", `public, max-age=${uploadsCacheMaxAgeSec}, immutable`);
         res.type("image/webp");
-        return res.sendFile(derivedPath, (err) => {
-            if (!err) return;
-            if (res.headersSent) return;
-            return res.redirect(rawSrc);
-        });
+        return res.sendFile(derivedPath);
     } catch (error) {
         return res.redirect(rawSrc);
     }
