@@ -1249,6 +1249,54 @@ function getProductCategory(product) {
 
 }
 
+function getInCartQtyForVariant(productId, sessionId, category, variantKey) {
+    const targetId = Number(productId);
+    const normalizedSessionId = normalizeSessionId(sessionId);
+    const normalizedCategory = normalizeCategoryName(category);
+    const safeVariantKey = String(variantKey || "default");
+
+    return cart.reduce((sum, item) => {
+        if (Number(item?.id) !== targetId) return sum;
+        if (normalizeSessionId(item?.sessionId) !== normalizedSessionId) return sum;
+        if (normalizeCategoryName(item?.category || normalizedCategory) !== normalizedCategory) return sum;
+
+        const itemVariantKey = String(item?.variantKey || buildVariantKey(item?.variantName, item?.image));
+        if (itemVariantKey !== safeVariantKey) return sum;
+
+        return sum + Math.max(0, Math.floor(Number(item?.qty) || 0));
+    }, 0);
+}
+
+function getFirstAvailableVariantForSession(product, sessionId, category, preferredSize = "") {
+    const images = normalizeImageList(product?.images || product?.image);
+    if (!images.length) return null;
+
+    const names = normalizeVariantNames(product?.variantNames);
+
+    for (let idx = 0; idx < images.length; idx += 1) {
+        const candidateImage = images[idx] || product.image || "";
+        const candidateName = names[idx] || `Màu ${idx + 1}`;
+        const candidateVariantKey = buildVariantKey(candidateName, candidateImage);
+        const candidateSize = resolveSelectedSizeByVariant(product, idx, preferredSize);
+        const stockInfo = getVariantStockInfo(product, idx, candidateSize);
+        if (Number(stockInfo.stock) <= 0) continue;
+
+        const inCartQty = getInCartQtyForVariant(product.id, sessionId, category, candidateVariantKey);
+        if (inCartQty >= Number(stockInfo.stock)) continue;
+
+        return {
+            image: candidateImage,
+            variantName: candidateName,
+            variantKey: candidateVariantKey,
+            variantIndex: idx,
+            size: candidateSize,
+            stockInfo
+        };
+    }
+
+    return null;
+}
+
 function getNextSortOrder() {
 
     return products.reduce((max, product) => {
@@ -2562,15 +2610,15 @@ app.post("/add", (req, res) => {
     const preferredImage = typeof requestedImage === "string" && requestedImage.trim()
         ? requestedImage.trim()
         : "";
-    const effectiveImage = resolvePreferredVariantImage(product, preferredImage || product.image);
-    const effectiveVariantName = resolvePreferredVariantName(product, effectiveImage, requestedVariantName, requestedVariantIndex);
-    const effectiveVariantKey = buildVariantKey(effectiveVariantName, effectiveImage);
-    const effectiveVariantIndex = getVariantIndex(product, effectiveImage, effectiveVariantName);
-    const effectiveSize = resolveSelectedSizeByVariant(product, effectiveVariantIndex, requestedSize);
-    const effectiveStockInfo = getVariantStockInfo(product, effectiveVariantIndex, effectiveSize);
-    const effectiveSizeKey = buildSizeKey(effectiveSize);
-    const effectiveItemKey = buildCartItemKey(effectiveVariantKey, effectiveSizeKey);
-    const item = cart.find(
+    let effectiveImage = resolvePreferredVariantImage(product, preferredImage || product.image);
+    let effectiveVariantName = resolvePreferredVariantName(product, effectiveImage, requestedVariantName, requestedVariantIndex);
+    let effectiveVariantKey = buildVariantKey(effectiveVariantName, effectiveImage);
+    let effectiveVariantIndex = getVariantIndex(product, effectiveImage, effectiveVariantName);
+    let effectiveSize = resolveSelectedSizeByVariant(product, effectiveVariantIndex, requestedSize);
+    let effectiveStockInfo = getVariantStockInfo(product, effectiveVariantIndex, effectiveSize);
+    let effectiveSizeKey = buildSizeKey(effectiveSize);
+    let effectiveItemKey = buildCartItemKey(effectiveVariantKey, effectiveSizeKey);
+    let item = cart.find(
 
         x => x.id == id
             && normalizeSessionId(x.sessionId) === sessionId
@@ -2579,7 +2627,34 @@ app.post("/add", (req, res) => {
 
     );
 
-    const requestedQty = item ? item.qty + 1 : 1;
+    let requestedQty = item ? item.qty + 1 : 1;
+
+    if (requestedQty > effectiveStockInfo.stock) {
+
+        const fallbackVariant = getFirstAvailableVariantForSession(product, sessionId, productCategory, requestedSize);
+        if (fallbackVariant) {
+            effectiveImage = fallbackVariant.image;
+            effectiveVariantName = fallbackVariant.variantName;
+            effectiveVariantKey = fallbackVariant.variantKey;
+            effectiveVariantIndex = fallbackVariant.variantIndex;
+            effectiveSize = fallbackVariant.size;
+            effectiveStockInfo = fallbackVariant.stockInfo;
+            effectiveSizeKey = buildSizeKey(effectiveSize);
+            effectiveItemKey = buildCartItemKey(effectiveVariantKey, effectiveSizeKey);
+
+            item = cart.find(
+
+                x => x.id == id
+                    && normalizeSessionId(x.sessionId) === sessionId
+                    && normalizeCategoryName(x.category || productCategory) === productCategory
+                    && String(x.itemKey || buildCartItemKey(x.variantKey || "default", x.sizeKey || "size:default")) === effectiveItemKey
+
+            );
+
+            requestedQty = item ? item.qty + 1 : 1;
+        }
+
+    }
 
     if (requestedQty > effectiveStockInfo.stock) {
 
