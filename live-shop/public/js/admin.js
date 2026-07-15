@@ -925,22 +925,16 @@ async function loadOrders() {
           return `<span class="order-item-pill">${item.name}${variantPart} x${item.qty}</span>`;
         }).join("");
 
-        const actionButtons = [
-          { status: "pending", label: "⏳ Chờ", className: "pending" },
-          { status: "confirmed", label: "✓ Xác nhận", className: "confirmed" },
-          { status: "done", label: "✅ Hoàn tất", className: "done" }
-        ].map((button) => `
-          <button class="${button.className}${order.status === button.status ? " active" : ""}" onclick="updateOrderStatus(${order.id}, '${button.status}')">
-            ${button.label}
-          </button>
-        `).join("");
+        const skuSummary = [...new Set((order.items || [])
+          .map((item) => String(item.sku || "").trim())
+          .filter(Boolean))].join(" • ") || "Chưa có SKU";
 
         return `
           <tr>
             <td class="order-customer-cell">
               <div class="order-customer-top">
                 <span class="order-customer-name">${order.customer || "Khách lẻ"}</span>
-                <span class="order-id-chip">#${order.id}</span>
+                <span class="order-sku-chip">SKU: ${skuSummary}</span>
               </div>
               <div class="order-items-wrap">${itemSummary || '<span class="order-item-pill">Không có sản phẩm</span>'}</div>
             </td>
@@ -955,7 +949,11 @@ async function loadOrders() {
             <td><span class="order-badge ${order.status}">${statusText}</span></td>
             <td>
               <div class="order-actions">
-                ${actionButtons}
+                <select class="order-status-select ${order.status}" onchange="updateOrderStatus(${order.id}, this.value)">
+                  <option value="pending" ${order.status === "pending" ? "selected" : ""}>⏳ Chờ xử lý</option>
+                  <option value="confirmed" ${order.status === "confirmed" ? "selected" : ""}>✓ Đã xác nhận</option>
+                  <option value="done" ${order.status === "done" ? "selected" : ""}>✅ Hoàn tất</option>
+                </select>
                 <button class="delete-order" type="button" onclick="deleteOrder(${order.id})" title="Xóa đơn hàng">🗑️</button>
               </div>
             </td>

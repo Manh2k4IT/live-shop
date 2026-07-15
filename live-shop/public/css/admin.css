@@ -1224,54 +1224,40 @@ td img{
 }
 
 .order-actions{
-    display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
+    display:flex;
+    flex-direction:column;
     gap:8px;
+    min-width:170px;
 }
 
-.order-actions button{
+.order-status-select{
     min-height:38px;
-    padding:8px 12px;
-    border-radius:12px;
-    font-weight:700;
+    border-radius:10px;
+    border:1px solid #d1d5db;
+    padding:8px 10px;
     font-size:13px;
-    letter-spacing:.01em;
-    border:1px solid transparent;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:6px;
-    box-shadow:0 3px 8px rgba(15, 23, 42, 0.06);
-    transition: transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+    font-weight:700;
+    color:#0f172a;
+    background:#fff;
+    cursor:pointer;
 }
 
-.order-actions button:hover{
-    transform:translateY(-1px);
-    box-shadow:0 8px 16px rgba(15, 23, 42, 0.12);
-}
-
-.order-actions button.pending{
+.order-status-select.pending{
     background:#fff8e8;
     border-color:#f5d08a;
     color:#b45309;
 }
 
-.order-actions button.confirmed{
+.order-status-select.confirmed{
     background:#eef4ff;
     border-color:#bfdbfe;
     color:#1d4ed8;
 }
 
-.order-actions button.done{
+.order-status-select.done{
     background:#ecfdf3;
     border-color:#a7f3d0;
     color:#047857;
-}
-
-.order-actions button.active{
-    color:white;
-    border-color:transparent;
-    box-shadow:0 8px 16px rgba(15, 23, 42, 0.16);
 }
 
 .order-actions button.delete-order{
@@ -1279,24 +1265,13 @@ td img{
     color:#ffffff;
     border:1px solid #b91c1c;
     font-weight:800;
-    grid-column:1 / -1;
+    min-height:34px;
+    border-radius:10px;
 }
 
 .order-actions button.delete-order:hover{
     background:#b91c1c;
     color:#ffffff;
-}
-
-.order-actions button.pending.active{
-    background:#f59e0b;
-}
-
-.order-actions button.confirmed.active{
-    background:#3b82f6;
-}
-
-.order-actions button.done.active{
-    background:#10b981;
 }
 
 #orders-view table td{
@@ -1321,16 +1296,19 @@ td img{
     color:#0f172a;
 }
 
-.order-id-chip{
+.order-sku-chip{
     display:inline-flex;
     align-items:center;
     padding:5px 10px;
     border-radius:999px;
-    background:#eef2ff;
-    color:#3730a3;
+    background:#ecfeff;
+    color:#0f766e;
     font-size:12px;
     font-weight:700;
+    max-width:230px;
     white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
 }
 
 .order-items-wrap{
@@ -1401,15 +1379,7 @@ td img{
 
 @media(max-width:768px){
     .order-actions{
-        grid-template-columns:1fr;
-    }
-
-    .order-actions button{
-        width:100%;
-    }
-
-    .order-actions button.delete-order{
-        grid-column:auto;
+        min-width:140px;
     }
 
     .order-customer-cell,
