@@ -156,6 +156,92 @@ app.use("/uploads", express.static(uploadDir, {
 }));
 
 const OPTIMIZABLE_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+const WEBP_CONVERTIBLE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".gif", ".jfif", ".pjpeg", ".pjp"]);
+
+function splitUploadUrlSuffix(urlValue) {
+    const input = String(urlValue || "").trim();
+    if (!input) return { pathname: "", suffix: "" };
+
+    const qIndex = input.indexOf("?");
+    const hIndex = input.indexOf("#");
+    const cutIndex = [qIndex, hIndex].filter((n) => n >= 0).reduce((min, n) => Math.min(min, n), Number.MAX_SAFE_INTEGER);
+    if (!Number.isFinite(cutIndex) || cutIndex === Number.MAX_SAFE_INTEGER) {
+        return { pathname: input, suffix: "" };
+    }
+
+    return {
+        pathname: input.slice(0, cutIndex),
+        suffix: input.slice(cutIndex)
+    };
+}
+
+function resolveUploadAbsolutePathFromUrl(uploadUrlPathname) {
+    const cleanPath = String(uploadUrlPathname || "").trim();
+    if (!cleanPath.startsWith("/uploads/")) return null;
+
+    const relativeFromUploads = cleanPath.replace(/^\/uploads\//, "");
+    const safeRelative = path.posix.normalize(relativeFromUploads).replace(/^\.\.(\/|\\|$)+/, "");
+    const absolutePath = path.join(uploadDir, safeRelative);
+    if (!absolutePath.startsWith(uploadDir)) return null;
+
+    return {
+        safeRelative,
+        absolutePath
+    };
+}
+
+async function convertReferencedUploadUrlToWebp(uploadUrl, convertedPathCache) {
+    const originalUrl = String(uploadUrl || "").trim();
+    if (!originalUrl.startsWith("/uploads/")) return originalUrl;
+    if (!sharp) return originalUrl;
+
+    const { pathname, suffix } = splitUploadUrlSuffix(originalUrl);
+    const extension = path.extname(pathname).toLowerCase();
+    if (!extension || extension === ".webp" || !WEBP_CONVERTIBLE_EXTENSIONS.has(extension)) {
+        return originalUrl;
+    }
+
+    const cached = convertedPathCache.get(pathname);
+    if (cached) return `${cached}${suffix}`;
+
+    const resolved = resolveUploadAbsolutePathFromUrl(pathname);
+    if (!resolved) return originalUrl;
+
+    const sourcePath = resolved.absolutePath;
+    const parsedRelative = path.posix.parse(resolved.safeRelative);
+    const targetRelative = path.posix.join(parsedRelative.dir || "", `${parsedRelative.name}.webp`);
+    const targetPathname = `/uploads/${targetRelative}`;
+    const targetAbsolutePath = path.join(uploadDir, targetRelative);
+
+    try {
+        if (!fs.existsSync(sourcePath) && fs.existsSync(targetAbsolutePath)) {
+            convertedPathCache.set(pathname, targetPathname);
+            return `${targetPathname}${suffix}`;
+        }
+
+        if (!fs.existsSync(sourcePath)) {
+            return originalUrl;
+        }
+
+        if (!fs.existsSync(targetAbsolutePath)) {
+            await sharp(sourcePath, { failOn: "none" })
+                .rotate()
+                .resize({
+                    width: imageMaxWidthPx,
+                    withoutEnlargement: true,
+                    fit: "inside"
+                })
+                .webp({ quality: imageQuality, effort: 4 })
+                .toFile(targetAbsolutePath);
+        }
+
+        await fs.promises.unlink(sourcePath).catch(() => {});
+        convertedPathCache.set(pathname, targetPathname);
+        return `${targetPathname}${suffix}`;
+    } catch (error) {
+        return originalUrl;
+    }
+}
 
 async function optimizeImageFile(filePath) {
     if (!imageOptimizeEnabled || !sharp) return { optimized: false, reason: "disabled" };
@@ -1392,6 +1478,60 @@ reconcileEntireCart();
 persistStateImmediate().catch(err => {
     console.error("Không thể lưu state ban đầu:", err.message);
 });
+
+async function migrateLegacyUploadsToWebpIfNeeded() {
+    if (!sharp) return;
+
+    let changed = false;
+    let migratedRefs = 0;
+    const convertedPathCache = new Map();
+
+    const convertRef = async (value) => {
+        const current = String(value || "").trim();
+        if (!current) return current;
+
+        const next = await convertReferencedUploadUrlToWebp(current, convertedPathCache);
+        if (next !== current) {
+            changed = true;
+            migratedRefs += 1;
+        }
+        return next;
+    };
+
+    for (const product of products) {
+        if (!product || typeof product !== "object") continue;
+
+        product.image = await convertRef(product.image);
+        const normalizedImages = normalizeImageList(product.images || product.image);
+        const nextImages = [];
+        for (const imageUrl of normalizedImages) {
+            nextImages.push(await convertRef(imageUrl));
+        }
+
+        if (nextImages.length) {
+            product.images = nextImages;
+            if (!product.image || !String(product.image).trim()) {
+                product.image = nextImages[0];
+            }
+        }
+    }
+
+    for (const item of cart) {
+        if (!item || typeof item !== "object") continue;
+        item.image = await convertRef(item.image);
+    }
+
+    if (appSettings && typeof appSettings === "object") {
+        appSettings.shopLogo = await convertRef(appSettings.shopLogo);
+    }
+
+    if (!changed) return;
+
+    normalizeProductOrder();
+    reconcileEntireCart();
+    await persistStateImmediate();
+    console.log(`Đã chuyển ${migratedRefs} link ảnh cũ sang webp.`);
+}
 
 /* ===========================
    Helper
@@ -2778,6 +2918,10 @@ process.on("uncaughtException", (error) => {
 
 startServer(currentPort);
 setImmediate(() => {
+    migrateLegacyUploadsToWebpIfNeeded().catch((error) => {
+        console.warn("Chuyển ảnh cũ sang webp thất bại:", error.message);
+    });
+
     optimizeExistingUploadsInBackground().catch((error) => {
         console.warn("Tối ưu ảnh nền thất bại:", error.message);
     });
