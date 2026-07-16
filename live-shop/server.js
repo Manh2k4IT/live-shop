@@ -111,6 +111,138 @@ app.use((req, res, next) => {
     next();
 });
 
+const SHOP_HTML_PATH = path.join(__dirname, "public", "shop.html");
+let shopHtmlTemplateCache = "";
+
+function getShopHtmlTemplate() {
+    if (shopHtmlTemplateCache) return shopHtmlTemplateCache;
+
+    try {
+        shopHtmlTemplateCache = fs.readFileSync(SHOP_HTML_PATH, "utf8");
+    } catch (error) {
+        shopHtmlTemplateCache = "";
+        console.error("Không đọc được shop.html để tạo social preview:", error.message);
+    }
+
+    return shopHtmlTemplateCache;
+}
+
+function escapeHtml(value) {
+    return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function normalizeBasePublicUrl(req) {
+    const rawConfigured = String(appSettings?.shopPublicUrl || DEFAULT_SETTINGS.shopPublicUrl || "").trim();
+    const fallback = `${req.protocol}://${req.get("host")}`;
+    const source = rawConfigured || fallback;
+
+    try {
+        const parsed = new URL(source);
+        const pathname = parsed.pathname && parsed.pathname !== "/"
+            ? parsed.pathname.replace(/\/+$/, "")
+            : "";
+        return `${parsed.origin}${pathname}`;
+    } catch (error) {
+        return fallback.replace(/\/+$/, "");
+    }
+}
+
+function toAbsolutePublicUrl(value, baseUrl) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw)) return raw;
+
+    if (raw.startsWith("//")) {
+        return `https:${raw}`;
+    }
+
+    const base = String(baseUrl || "").replace(/\/+$/, "");
+    if (!base) return raw;
+
+    if (raw.startsWith("/")) {
+        return `${base}${raw}`;
+    }
+
+    return `${base}/${raw.replace(/^\/+/, "")}`;
+}
+
+function buildProductShareMeta(req, productId) {
+    const id = Number(productId);
+    if (!Number.isFinite(id) || id <= 0) return null;
+
+    const product = (Array.isArray(products) ? products : []).find((item) => Number(item?.id) === id);
+    if (!product) return null;
+
+    const baseUrl = normalizeBasePublicUrl(req);
+    const canonicalUrl = `${baseUrl}/shop.html?productId=${id}`;
+    const variants = normalizeImageList(product.images || product.image);
+    const imagePath = String(product.image || variants[0] || "").trim();
+    const imageUrl = toAbsolutePublicUrl(imagePath, baseUrl) || `${baseUrl}/uploads/logogusa.jpg`;
+
+    const productName = String(product.name || "Sản phẩm LIVE SHOP").trim() || "Sản phẩm LIVE SHOP";
+    const productPrice = Math.max(0, Math.floor(Number(product.price) || 0)).toLocaleString("vi-VN");
+    const productStock = Math.max(0, Math.floor(Number(product.stock) || 0));
+
+    const title = `${productName} | LIVE SHOP`;
+    const description = `Giá ${productPrice}đ - Tồn kho ${productStock}. Xem chi tiết và đặt hàng tại LIVE SHOP.`;
+
+    return {
+        title,
+        description,
+        canonicalUrl,
+        imageUrl
+    };
+}
+
+function injectShareMetaToShopHtml(template, meta) {
+    if (!template || !meta) return template;
+
+    const headCloseIndex = template.indexOf("</head>");
+    if (headCloseIndex < 0) return template;
+
+    const ogBlock = [
+        "  <meta property=\"og:type\" content=\"product\" />",
+        `  <meta property=\"og:title\" content=\"${escapeHtml(meta.title)}\" />`,
+        `  <meta property=\"og:description\" content=\"${escapeHtml(meta.description)}\" />`,
+        `  <meta property=\"og:url\" content=\"${escapeHtml(meta.canonicalUrl)}\" />`,
+        `  <meta property=\"og:image\" content=\"${escapeHtml(meta.imageUrl)}\" />`,
+        "  <meta property=\"og:image:alt\" content=\"Ảnh sản phẩm LIVE SHOP\" />",
+        "  <meta name=\"twitter:card\" content=\"summary_large_image\" />",
+        `  <meta name=\"twitter:title\" content=\"${escapeHtml(meta.title)}\" />`,
+        `  <meta name=\"twitter:description\" content=\"${escapeHtml(meta.description)}\" />`,
+        `  <meta name=\"twitter:image\" content=\"${escapeHtml(meta.imageUrl)}\" />`,
+        `  <link rel=\"canonical\" href=\"${escapeHtml(meta.canonicalUrl)}\" />`
+    ].join("\n");
+
+    return `${template.slice(0, headCloseIndex)}\n${ogBlock}\n${template.slice(headCloseIndex)}`;
+}
+
+app.get("/shop.html", (req, res, next) => {
+    const productId = Number(req.query?.productId);
+    if (!Number.isFinite(productId) || productId <= 0) {
+        return next();
+    }
+
+    const template = getShopHtmlTemplate();
+    if (!template) {
+        return next();
+    }
+
+    const meta = buildProductShareMeta(req, productId);
+    if (!meta) {
+        return next();
+    }
+
+    const html = injectShareMetaToShopHtml(template, meta);
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(html);
+});
+
 app.use(express.static("public"));
 
 const writeLimiter = rateLimit({
