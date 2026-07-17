@@ -539,14 +539,10 @@ function renderCustomerDataView() {
   });
 
   const totalCustomersEl = document.getElementById("customerDataTotalCustomers");
-  const totalOrdersEl = document.getElementById("customerDataTotalOrders");
-  const totalSpentEl = document.getElementById("customerDataTotalSpent");
   const selectedYearEl = document.getElementById("customerDataSelectedYear");
   const list = document.getElementById("customer-data-list");
 
   if (totalCustomersEl) totalCustomersEl.textContent = String(records.length);
-  if (totalOrdersEl) totalOrdersEl.textContent = String(filteredOrders.length);
-  if (totalSpentEl) totalSpentEl.textContent = formatMoney(filteredOrders.reduce((sum, order) => sum + getOrderGrandTotal(order), 0));
   if (selectedYearEl) selectedYearEl.textContent = selectedYear || "Tất cả";
 
   if (!list) return;
