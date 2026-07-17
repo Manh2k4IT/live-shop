@@ -392,7 +392,7 @@ function renderWholesaleInsights() {
   const customers = buildWholesaleCustomers(state.orders)
     .filter((customer) => customer.maxOrderValue >= WHOLESALE_ORDER_THRESHOLD);
   const featuredCustomers = customers.filter((customer) => customer.priorityLevel !== "normal");
-  const visibleCustomers = (featuredCustomers.length ? featuredCustomers : customers).slice(0, 20);
+  const visibleCustomers = customers.slice(0, 20);
   const topRevenueCustomer = [...customers].sort((a, b) => b.totalSpent - a.totalSpent || b.totalQty - a.totalQty)[0] || null;
   const topQuantityCustomer = customers[0] || null;
 
