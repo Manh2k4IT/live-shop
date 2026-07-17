@@ -448,6 +448,38 @@ function populateCustomerDataYearOptions(orders) {
   }
 }
 
+function populateProductInsightsDateOptions(orders) {
+  const daySelect = document.getElementById("product-insights-day");
+  const monthSelect = document.getElementById("product-insights-month");
+  const yearSelect = document.getElementById("product-insights-year");
+  if (!daySelect || !monthSelect || !yearSelect) return;
+
+  const currentDay = daySelect.value;
+  const currentMonth = monthSelect.value;
+  const currentYear = yearSelect.value;
+  const years = [...new Set((Array.isArray(orders) ? orders : [])
+    .map((order) => getOrderDateParts(order?.updatedAt || order?.createdAt)?.year || "")
+    .filter(Boolean))].sort((a, b) => Number(b) - Number(a));
+
+  daySelect.innerHTML = '<option value="">Ngày: Tất cả</option>' + Array.from({ length: 31 }, (_, index) => {
+    const day = String(index + 1).padStart(2, "0");
+    return `<option value="${day}">${day}</option>`;
+  }).join("");
+
+  monthSelect.innerHTML = '<option value="">Tháng: Tất cả</option>' + Array.from({ length: 12 }, (_, index) => {
+    const month = String(index + 1).padStart(2, "0");
+    return `<option value="${month}">Tháng ${month}</option>`;
+  }).join("");
+
+  yearSelect.innerHTML = '<option value="">Năm: Tất cả</option>' + years
+    .map((year) => `<option value="${year}">${year}</option>`)
+    .join("");
+
+  if (currentDay) daySelect.value = currentDay;
+  if (currentMonth) monthSelect.value = currentMonth;
+  if (years.includes(currentYear)) yearSelect.value = currentYear;
+}
+
 function buildCustomerDataRecords(orders) {
   const grouped = new Map();
 
@@ -518,6 +550,57 @@ function buildCustomerDataRecords(orders) {
     .sort((a, b) => b.latestTime - a.latestTime || b.totalSpent - a.totalSpent || b.ordersCount - a.ordersCount);
 }
 
+function buildProductInsightsRecords(orders) {
+  const grouped = new Map();
+
+  (Array.isArray(orders) ? orders : []).forEach((order) => {
+    const orderTimeValue = order?.updatedAt || order?.createdAt || "";
+    const orderTime = new Date(orderTimeValue).getTime();
+    const orderId = Number(order?.id) || String(order?.id || orderTimeValue);
+
+    (Array.isArray(order?.items) ? order.items : []).forEach((item) => {
+      const sku = String(item?.sku || "").trim() || "Chưa có SKU";
+      const name = String(item?.name || "Sản phẩm").trim() || "Sản phẩm";
+      const category = String(item?.category || "Khác").trim() || "Khác";
+      const variant = String(item?.variantName || "").trim();
+      const key = `${sku}||${name}||${category}`.toLowerCase();
+      const qty = Math.max(0, Number(item?.qty) || 0);
+
+      const existing = grouped.get(key) || {
+        key,
+        sku,
+        name,
+        category,
+        totalQty: 0,
+        latestAt: orderTimeValue,
+        latestTime: Number.isFinite(orderTime) ? orderTime : 0,
+        orderIds: new Set(),
+        variants: new Set()
+      };
+
+      existing.totalQty += qty;
+      existing.orderIds.add(orderId);
+      if (variant) existing.variants.add(variant);
+
+      if (Number.isFinite(orderTime) && orderTime >= existing.latestTime) {
+        existing.latestTime = orderTime;
+        existing.latestAt = orderTimeValue;
+      }
+
+      grouped.set(key, existing);
+    });
+  });
+
+  return [...grouped.values()]
+    .map((product) => ({
+      ...product,
+      orderCount: product.orderIds.size,
+      variants: [...product.variants],
+      searchText: [product.sku, product.name, product.category, ...product.variants].join(" ").toLowerCase()
+    }))
+    .sort((a, b) => b.totalQty - a.totalQty || b.orderCount - a.orderCount || b.latestTime - a.latestTime);
+}
+
 function renderCustomerDataView() {
   const searchValue = (document.getElementById("customer-data-search")?.value || "").trim().toLowerCase();
   const selectedDay = document.getElementById("customer-data-day")?.value || "";
@@ -558,6 +641,61 @@ function renderCustomerDataView() {
       <td class="customer-data-phone-cell">${customer.phone}</td>
       <td class="customer-data-address-cell">${customer.address}</td>
       <td class="customer-data-time-cell">${formatOrderTime(customer.latestAt)}</td>
+    </tr>
+  `).join("");
+}
+
+function renderProductInsightsView() {
+  const searchValue = (document.getElementById("product-insights-search")?.value || "").trim().toLowerCase();
+  const selectedDay = document.getElementById("product-insights-day")?.value || "";
+  const selectedMonth = document.getElementById("product-insights-month")?.value || "";
+  const selectedYear = document.getElementById("product-insights-year")?.value || "";
+
+  const filteredOrders = (Array.isArray(state.orders) ? state.orders : []).filter((order) => {
+    const parts = getOrderDateParts(order?.updatedAt || order?.createdAt);
+    if (!parts) return false;
+    if (selectedDay && parts.day !== selectedDay) return false;
+    if (selectedMonth && parts.month !== selectedMonth) return false;
+    if (selectedYear && parts.year !== selectedYear) return false;
+    return true;
+  });
+
+  const records = buildProductInsightsRecords(filteredOrders).filter((product) => {
+    if (!searchValue) return true;
+    return product.searchText.includes(searchValue);
+  });
+
+  const totalProductsEl = document.getElementById("productInsightsTotalProducts");
+  const totalQtyEl = document.getElementById("productInsightsTotalQty");
+  const topSkuEl = document.getElementById("productInsightsTopSku");
+  const selectedYearEl = document.getElementById("productInsightsSelectedYear");
+  const list = document.getElementById("product-insights-list");
+
+  if (totalProductsEl) totalProductsEl.textContent = String(records.length);
+  if (totalQtyEl) totalQtyEl.textContent = String(records.reduce((sum, item) => sum + item.totalQty, 0));
+  if (topSkuEl) topSkuEl.textContent = records[0]?.sku || "-";
+  if (selectedYearEl) selectedYearEl.textContent = selectedYear || "Tất cả";
+
+  if (!list) return;
+
+  if (!records.length) {
+    list.innerHTML = '<tr><td colspan="6">Không có dữ liệu sản phẩm phù hợp bộ lọc</td></tr>';
+    return;
+  }
+
+  list.innerHTML = records.map((product) => `
+    <tr>
+      <td class="product-insights-sku-cell">${product.sku}</td>
+      <td class="product-insights-name-cell">
+        <div class="product-insights-name-wrap">
+          <strong>${product.name}</strong>
+          ${product.variants.length ? `<span>${product.variants.slice(0, 2).join(" • ")}</span>` : ""}
+        </div>
+      </td>
+      <td class="product-insights-category-cell">${product.category}</td>
+      <td class="product-insights-qty-cell">${product.totalQty}</td>
+      <td class="product-insights-orders-cell">${product.orderCount}</td>
+      <td class="product-insights-time-cell">${formatOrderTime(product.latestAt)}</td>
     </tr>
   `).join("");
 }
@@ -1271,8 +1409,10 @@ async function loadOrders() {
     const data = await res.json();
     state.orders = data;
     populateCustomerDataYearOptions(data);
+    populateProductInsightsDateOptions(data);
     renderWholesaleInsights();
     renderCustomerDataView();
+    renderProductInsightsView();
 
     const list = document.getElementById("order-list");
     const search = (document.getElementById("order-search")?.value || "").toLowerCase();
@@ -1579,6 +1719,7 @@ window.handleLogoFileChange = handleLogoFileChange;
 window.updateWholesaleCareStatus = updateWholesaleCareStatus;
 window.renderWholesaleInsights = renderWholesaleInsights;
 window.renderCustomerDataView = renderCustomerDataView;
+window.renderProductInsightsView = renderProductInsightsView;
 
 document.querySelectorAll(".nav-btn").forEach((btn) => {
   btn.addEventListener("click", () => switchTab(btn.dataset.tab));

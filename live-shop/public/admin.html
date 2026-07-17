@@ -7,7 +7,7 @@
 
     <title>Quản lý kho Livestream</title>
 
-    <link rel="stylesheet" href="css/admin.css?v=20260717e">
+    <link rel="stylesheet" href="css/admin.css?v=20260717f">
     <style>
         .brand-title {
             display: flex;
@@ -96,6 +96,8 @@
             <button class="nav-btn" data-tab="wholesale">📈 Phân tích khách sỉ</button>
 
             <button class="nav-btn" data-tab="customer-data">🗂️ Data tổng</button>
+
+            <button class="nav-btn" data-tab="product-insights">🔥 Sản phẩm bán chạy</button>
 
         </nav>
 
@@ -481,6 +483,110 @@
 
         </section>
 
+        <section id="product-insights-view" class="view-panel">
+
+            <div class="container">
+
+                <header class="header">
+
+                    <div>
+
+                        <h1>🔥 Phân tích sản phẩm bán chạy</h1>
+
+                        <p>Theo dõi SKU bán mạnh, số lượng đã bán và lần bán gần nhất</p>
+
+                    </div>
+
+                </header>
+
+                <section class="dashboard product-insights-dashboard">
+
+                    <div class="card stat-card">
+
+                        <span>Sản phẩm trong bộ lọc</span>
+
+                        <h2 id="productInsightsTotalProducts">0</h2>
+
+                    </div>
+
+                    <div class="card stat-card">
+
+                        <span>Tổng số lượng đã bán</span>
+
+                        <h2 id="productInsightsTotalQty">0</h2>
+
+                    </div>
+
+                    <div class="card stat-card">
+
+                        <span>SKU bán chạy nhất</span>
+
+                        <h2 id="productInsightsTopSku">-</h2>
+
+                    </div>
+
+                    <div class="card stat-card">
+
+                        <span>Năm đang xem</span>
+
+                        <h2 id="productInsightsSelectedYear">Tất cả</h2>
+
+                    </div>
+
+                </section>
+
+                <section class="card product-insights-toolbar">
+                    <input
+                        type="text"
+                        id="product-insights-search"
+                        placeholder="🔍 Tìm SKU, tên sản phẩm, danh mục..."
+                        onkeyup="renderProductInsightsView()"
+                    >
+                    <select id="product-insights-day" onchange="renderProductInsightsView()">
+                        <option value="">Ngày: Tất cả</option>
+                    </select>
+                    <select id="product-insights-month" onchange="renderProductInsightsView()">
+                        <option value="">Tháng: Tất cả</option>
+                    </select>
+                    <select id="product-insights-year" onchange="renderProductInsightsView()">
+                        <option value="">Năm: Tất cả</option>
+                    </select>
+                </section>
+
+                <section class="card product-insights-table-card">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+
+                                <th>SKU</th>
+
+                                <th>Tên sản phẩm</th>
+
+                                <th>Danh mục</th>
+
+                                <th>Số lượng bán</th>
+
+                                <th>Số đơn có mặt</th>
+
+                                <th>Lần bán gần nhất</th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="product-insights-list"></tbody>
+
+                    </table>
+
+                </section>
+
+            </div>
+
+        </section>
+
     </main>
 
 </div>
@@ -654,7 +760,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
-<script src="js/admin.js?v=20260717e"></script>
+<script src="js/admin.js?v=20260717f"></script>
 
 </body>
 
