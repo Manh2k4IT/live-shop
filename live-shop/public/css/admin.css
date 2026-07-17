@@ -1388,17 +1388,23 @@ td img{
 }
 
 .wholesale-customer-list{
-    display:grid;
-    grid-template-columns:repeat(2, minmax(0, 1fr));
+    display:flex;
+    align-items:stretch;
     gap:16px;
+    overflow-x:auto;
+    padding:4px 2px 10px;
+    scroll-snap-type:x proximity;
 }
 
 .wholesale-customer-card{
+    flex:0 0 430px;
+    max-width:430px;
     border:1px solid #e2e8f0;
     border-radius:18px;
     padding:18px;
     background:#ffffff;
     box-shadow:0 8px 26px rgba(15, 23, 42, 0.06);
+    scroll-snap-align:start;
 }
 
 .wholesale-customer-card.priority{
@@ -1417,6 +1423,13 @@ td img{
     gap:12px;
     align-items:flex-start;
     margin-bottom:14px;
+}
+
+.wholesale-head-actions{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:10px;
 }
 
 .wholesale-rank{
@@ -1465,6 +1478,31 @@ td img{
 .wholesale-badge.strong{
     background:#fef3c7;
     color:#b45309;
+}
+
+.wholesale-care-select{
+    min-width:150px;
+    min-height:36px;
+    border-radius:10px;
+    border:1px solid #d1d5db;
+    background:#fff;
+    color:#0f172a;
+    font-size:13px;
+    font-weight:700;
+    padding:7px 10px;
+    cursor:pointer;
+}
+
+.wholesale-care-select.uncontacted{
+    background:#fff7ed;
+    border-color:#fdba74;
+    color:#c2410c;
+}
+
+.wholesale-care-select.contacted{
+    background:#ecfdf5;
+    border-color:#86efac;
+    color:#166534;
 }
 
 .wholesale-metrics{
@@ -1518,11 +1556,25 @@ td img{
     }
 
     .wholesale-customer-list{
-        grid-template-columns:1fr;
+        padding-bottom:6px;
     }
 
     .wholesale-metrics{
         grid-template-columns:1fr;
+    }
+
+    .wholesale-customer-card{
+        flex-basis:85vw;
+        max-width:85vw;
+    }
+
+    .wholesale-customer-head{
+        flex-direction:column;
+    }
+
+    .wholesale-head-actions{
+        width:100%;
+        align-items:stretch;
     }
 
     .order-customer-cell,
@@ -1539,10 +1591,6 @@ td img{
 @media(max-width:1100px){
     .dashboard{
         grid-template-columns:repeat(2,1fr);
-    }
-
-    .wholesale-customer-list{
-        grid-template-columns:1fr;
     }
 }
 

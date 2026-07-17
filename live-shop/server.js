@@ -594,7 +594,8 @@ const DEFAULT_ORDERS = [
 
 const DEFAULT_SETTINGS = {
     shopLogo: "/uploads/logogusa.jpg",
-    shopPublicUrl
+    shopPublicUrl,
+    wholesaleCareStatuses: {}
 };
 
 function getShippingFeeBySubtotal(subtotal) {
@@ -1899,6 +1900,9 @@ app.get("/settings", (req, res) => {
     res.json({
         shopLogo: String(appSettings?.shopLogo || DEFAULT_SETTINGS.shopLogo),
         shopPublicUrl: String(appSettings?.shopPublicUrl || DEFAULT_SETTINGS.shopPublicUrl || ""),
+        wholesaleCareStatuses: (appSettings?.wholesaleCareStatuses && typeof appSettings.wholesaleCareStatuses === "object")
+            ? appSettings.wholesaleCareStatuses
+            : {},
         uploadMaxFileSizeMb
     });
 
@@ -1937,6 +1941,35 @@ app.put("/settings/logo", (req, res) => {
     res.json({
         success: true,
         shopLogo: appSettings.shopLogo
+    });
+
+});
+
+app.put("/settings/wholesale-care", (req, res) => {
+
+    const customerKey = String(req.body?.customerKey || "").trim();
+    const status = String(req.body?.status || "").trim();
+
+    if (!customerKey) {
+        return res.status(400).json({ error: "Thiếu mã khách hàng" });
+    }
+
+    if (!["uncontacted", "contacted"].includes(status)) {
+        return res.status(400).json({ error: "Trạng thái chăm khách không hợp lệ" });
+    }
+
+    if (!appSettings.wholesaleCareStatuses || typeof appSettings.wholesaleCareStatuses !== "object") {
+        appSettings.wholesaleCareStatuses = {};
+    }
+
+    appSettings.wholesaleCareStatuses[customerKey] = status;
+    updateClient();
+
+    res.json({
+        success: true,
+        customerKey,
+        status,
+        wholesaleCareStatuses: appSettings.wholesaleCareStatuses
     });
 
 });
