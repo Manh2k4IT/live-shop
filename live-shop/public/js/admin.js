@@ -552,7 +552,7 @@ function renderCustomerDataView() {
   if (!list) return;
 
   if (!records.length) {
-    list.innerHTML = '<tr><td colspan="7">Không có dữ liệu khách hàng phù hợp bộ lọc</td></tr>';
+    list.innerHTML = '<tr><td colspan="4">Không có dữ liệu khách hàng phù hợp bộ lọc</td></tr>';
     return;
   }
 
@@ -561,13 +561,6 @@ function renderCustomerDataView() {
       <td class="customer-data-name-cell">${customer.customer}</td>
       <td class="customer-data-phone-cell">${customer.phone}</td>
       <td class="customer-data-address-cell">${customer.address}</td>
-      <td class="customer-data-products-cell">
-        <div class="customer-data-products-wrap">
-          ${customer.productPills.map((item) => `<span class="customer-data-pill">${item.label}</span>`).join("") || '<span class="customer-data-pill">Chưa có sản phẩm</span>'}
-        </div>
-      </td>
-      <td class="customer-data-orders-cell">${customer.ordersCount}</td>
-      <td class="customer-data-money-cell">${formatMoney(customer.totalSpent)}</td>
       <td class="customer-data-time-cell">${formatOrderTime(customer.latestAt)}</td>
     </tr>
   `).join("");
