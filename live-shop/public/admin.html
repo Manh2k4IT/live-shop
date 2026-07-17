@@ -7,7 +7,7 @@
 
     <title>Quản lý kho Livestream</title>
 
-    <link rel="stylesheet" href="css/admin.css?v=20260717f">
+    <link rel="stylesheet" href="css/admin.css?v=20260717g">
     <style>
         .brand-title {
             display: flex;
@@ -97,7 +97,7 @@
 
             <button class="nav-btn" data-tab="customer-data">🗂️ Data tổng</button>
 
-            <button class="nav-btn" data-tab="product-insights">🔥 Sản phẩm bán chạy</button>
+            <button class="nav-btn" data-tab="product-insights">🔥 Phân tích sản phẩm</button>
 
         </nav>
 
@@ -491,9 +491,9 @@
 
                     <div>
 
-                        <h1>🔥 Phân tích sản phẩm bán chạy</h1>
+                        <h1>🔥 Phân tích sản phẩm</h1>
 
-                        <p>Theo dõi SKU bán mạnh, số lượng đã bán và lần bán gần nhất</p>
+                        <p>Theo dõi sản phẩm bán chạy hoặc bán chậm theo thời gian</p>
 
                     </div>
 
@@ -519,7 +519,7 @@
 
                     <div class="card stat-card">
 
-                        <span>SKU bán chạy nhất</span>
+                        <span id="productInsightsTopSkuLabel">SKU bán chạy nhất</span>
 
                         <h2 id="productInsightsTopSku">-</h2>
 
@@ -536,6 +536,10 @@
                 </section>
 
                 <section class="card product-insights-toolbar">
+                    <div class="product-insights-mode-switch" role="group" aria-label="Chế độ phân tích sản phẩm">
+                        <button type="button" class="product-insights-mode-btn active" data-mode="fast" onclick="setProductInsightsMode('fast')">Bán chạy</button>
+                        <button type="button" class="product-insights-mode-btn" data-mode="slow" onclick="setProductInsightsMode('slow')">Bán chậm</button>
+                    </div>
                     <input
                         type="text"
                         id="product-insights-search"
@@ -568,8 +572,6 @@
                                 <th>Danh mục</th>
 
                                 <th>Số lượng bán</th>
-
-                                <th>Số đơn có mặt</th>
 
                                 <th>Lần bán gần nhất</th>
 

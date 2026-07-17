@@ -11,6 +11,7 @@ const PRODUCT_CATEGORIES = ["Áo", "Quần", "Chân váy", "Đầm", "Khác"];
 let variantRowsData = [];
 let shopPublicUrl = DEFAULT_PUBLIC_SHOP_URL;
 let uploadMaxFileSizeMb = DEFAULT_UPLOAD_MAX_FILE_SIZE_MB;
+let productInsightsMode = "fast";
 
 function sanitizeOrigin(input) {
   const raw = String(input || "").trim();
@@ -597,8 +598,15 @@ function buildProductInsightsRecords(orders) {
       orderCount: product.orderIds.size,
       variants: [...product.variants],
       searchText: [product.sku, product.name, product.category, ...product.variants].join(" ").toLowerCase()
-    }))
-    .sort((a, b) => b.totalQty - a.totalQty || b.orderCount - a.orderCount || b.latestTime - a.latestTime);
+    }));
+}
+
+function setProductInsightsMode(mode) {
+  productInsightsMode = mode === "slow" ? "slow" : "fast";
+  document.querySelectorAll(".product-insights-mode-btn").forEach((button) => {
+    button.classList.toggle("active", button.dataset.mode === productInsightsMode);
+  });
+  renderProductInsightsView();
 }
 
 function renderCustomerDataView() {
@@ -663,23 +671,31 @@ function renderProductInsightsView() {
   const records = buildProductInsightsRecords(filteredOrders).filter((product) => {
     if (!searchValue) return true;
     return product.searchText.includes(searchValue);
+  }).sort((a, b) => {
+    if (productInsightsMode === "slow") {
+      return a.totalQty - b.totalQty || a.orderCount - b.orderCount || a.latestTime - b.latestTime;
+    }
+
+    return b.totalQty - a.totalQty || b.orderCount - a.orderCount || b.latestTime - a.latestTime;
   });
 
   const totalProductsEl = document.getElementById("productInsightsTotalProducts");
   const totalQtyEl = document.getElementById("productInsightsTotalQty");
   const topSkuEl = document.getElementById("productInsightsTopSku");
+  const topSkuLabelEl = document.getElementById("productInsightsTopSkuLabel");
   const selectedYearEl = document.getElementById("productInsightsSelectedYear");
   const list = document.getElementById("product-insights-list");
 
   if (totalProductsEl) totalProductsEl.textContent = String(records.length);
   if (totalQtyEl) totalQtyEl.textContent = String(records.reduce((sum, item) => sum + item.totalQty, 0));
   if (topSkuEl) topSkuEl.textContent = records[0]?.sku || "-";
+  if (topSkuLabelEl) topSkuLabelEl.textContent = productInsightsMode === "slow" ? "SKU bán chậm nhất" : "SKU bán chạy nhất";
   if (selectedYearEl) selectedYearEl.textContent = selectedYear || "Tất cả";
 
   if (!list) return;
 
   if (!records.length) {
-    list.innerHTML = '<tr><td colspan="6">Không có dữ liệu sản phẩm phù hợp bộ lọc</td></tr>';
+    list.innerHTML = '<tr><td colspan="5">Không có dữ liệu sản phẩm phù hợp bộ lọc</td></tr>';
     return;
   }
 
@@ -694,7 +710,6 @@ function renderProductInsightsView() {
       </td>
       <td class="product-insights-category-cell">${product.category}</td>
       <td class="product-insights-qty-cell">${product.totalQty}</td>
-      <td class="product-insights-orders-cell">${product.orderCount}</td>
       <td class="product-insights-time-cell">${formatOrderTime(product.latestAt)}</td>
     </tr>
   `).join("");
@@ -1720,6 +1735,7 @@ window.updateWholesaleCareStatus = updateWholesaleCareStatus;
 window.renderWholesaleInsights = renderWholesaleInsights;
 window.renderCustomerDataView = renderCustomerDataView;
 window.renderProductInsightsView = renderProductInsightsView;
+window.setProductInsightsMode = setProductInsightsMode;
 
 document.querySelectorAll(".nav-btn").forEach((btn) => {
   btn.addEventListener("click", () => switchTab(btn.dataset.tab));
