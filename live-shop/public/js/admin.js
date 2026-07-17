@@ -5,6 +5,7 @@ const state = { products: [], orders: [] };
 const DEFAULT_SHOP_LOGO = "/uploads/logogusa.jpg";
 const DEFAULT_PUBLIC_SHOP_URL = "https://shop.gusa.vn";
 const DEFAULT_UPLOAD_MAX_FILE_SIZE_MB = 12;
+const WHOLESALE_ORDER_THRESHOLD = 1000000;
 let productSortable = null;
 const PRODUCT_CATEGORIES = ["Áo", "Quần", "Chân váy", "Đầm", "Khác"];
 let variantRowsData = [];
@@ -345,6 +346,7 @@ function buildWholesaleCustomers(orders) {
       totalSpent: 0,
       latestAt: order?.updatedAt || order?.createdAt || "",
       latestTime: Number.isFinite(orderTime) ? orderTime : 0,
+      maxOrderValue: 0,
       statuses: new Set(),
       categories: new Set(),
       skus: new Set(),
@@ -355,6 +357,7 @@ function buildWholesaleCustomers(orders) {
     existing.ordersCount += 1;
     existing.totalQty += totalQty;
     existing.totalSpent += totalSpent;
+    existing.maxOrderValue = Math.max(existing.maxOrderValue, totalSpent);
     existing.statuses.add(String(order?.status || "pending"));
     categories.forEach((item) => existing.categories.add(item));
     skus.forEach((item) => existing.skus.add(item));
@@ -386,7 +389,8 @@ function buildWholesaleCustomers(orders) {
 }
 
 function renderWholesaleInsights() {
-  const customers = buildWholesaleCustomers(state.orders);
+  const customers = buildWholesaleCustomers(state.orders)
+    .filter((customer) => customer.maxOrderValue >= WHOLESALE_ORDER_THRESHOLD);
   const featuredCustomers = customers.filter((customer) => customer.priorityLevel !== "normal");
   const visibleCustomers = (featuredCustomers.length ? featuredCustomers : customers).slice(0, 20);
   const topRevenueCustomer = [...customers].sort((a, b) => b.totalSpent - a.totalSpent || b.totalQty - a.totalQty)[0] || null;
@@ -406,7 +410,7 @@ function renderWholesaleInsights() {
   if (!list) return;
 
   if (!visibleCustomers.length) {
-    list.innerHTML = '<div class="wholesale-empty">Chưa có dữ liệu khách hàng để phân tích.</div>';
+    list.innerHTML = '<div class="wholesale-empty">Chưa có khách nào có giá trị đơn từ 1.000.000đ để phân tích.</div>';
     return;
   }
 
@@ -434,8 +438,9 @@ function renderWholesaleInsights() {
           <div class="wholesale-metric"><span>Số đơn</span><strong>${customer.ordersCount}</strong></div>
           <div class="wholesale-metric"><span>Số món</span><strong>${customer.totalQty}</strong></div>
           <div class="wholesale-metric"><span>Tổng chi</span><strong>${formatMoney(customer.totalSpent)}</strong></div>
-          <div class="wholesale-metric"><span>Số ngày mua</span><strong>${orderDayCount}</strong></div>
+          <div class="wholesale-metric"><span>Đơn lớn nhất</span><strong>${formatMoney(customer.maxOrderValue)}</strong></div>
         </div>
+        <div class="wholesale-meta-row"><span>Số ngày mua</span><strong>${orderDayCount}</strong></div>
         <div class="wholesale-meta-row"><span>Địa chỉ</span><strong>${customer.address}</strong></div>
         <div class="wholesale-meta-row"><span>SKU nổi bật</span><strong>${topSkus}</strong></div>
         <div class="wholesale-meta-row"><span>Sản phẩm mua</span><strong>${topProducts}</strong></div>
