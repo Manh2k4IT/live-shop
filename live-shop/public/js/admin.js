@@ -1,11 +1,10 @@
 const API = window.location.origin && window.location.origin !== "null"
   ? window.location.origin
   : "http://localhost:3000";
-const state = { products: [], orders: [], wholesaleCareStatuses: {} };
+const state = { products: [], orders: [] };
 const DEFAULT_SHOP_LOGO = "/uploads/logogusa.jpg";
 const DEFAULT_PUBLIC_SHOP_URL = "https://shop.gusa.vn";
 const DEFAULT_UPLOAD_MAX_FILE_SIZE_MB = 12;
-const WHOLESALE_ORDER_THRESHOLD = 1000000;
 let productSortable = null;
 const PRODUCT_CATEGORIES = ["Áo", "Quần", "Chân váy", "Đầm", "Khác"];
 let variantRowsData = [];
@@ -312,13 +311,6 @@ function getOrderDayIdentity(value) {
   return `${year}-${month}-${day}`;
 }
 
-function getWholesalePriorityLevel(customer) {
-  if (!customer) return "normal";
-  if (customer.totalQty >= 10 || customer.totalSpent >= 3000000 || customer.ordersCount >= 4) return "strong";
-  if (customer.totalQty >= 5 || customer.totalSpent >= 1500000 || customer.ordersCount >= 2) return "priority";
-  return "normal";
-}
-
 function getOrderDateParts(value) {
   if (!value) return null;
   const date = new Date(value);
@@ -329,84 +321,6 @@ function getOrderDateParts(value) {
     month: String(date.getMonth() + 1).padStart(2, "0"),
     year: String(date.getFullYear())
   };
-}
-
-function getWholesaleCareStatus(customerKey) {
-  const source = state.wholesaleCareStatuses && typeof state.wholesaleCareStatuses === "object"
-    ? state.wholesaleCareStatuses
-    : {};
-  return source[customerKey] === "contacted" ? "contacted" : "uncontacted";
-}
-
-function buildWholesaleCustomers(orders) {
-  const grouped = new Map();
-
-  (Array.isArray(orders) ? orders : []).forEach((order) => {
-    const phone = normalizePhoneIdentity(order?.phone);
-    const fallbackKey = `${String(order?.customer || "Khách lẻ").trim().toLowerCase()}__${String(order?.address || "").trim().toLowerCase()}`;
-    const key = phone || fallbackKey;
-    if (!key) return;
-
-    const totalSpent = getOrderGrandTotal(order);
-    const totalQty = (Array.isArray(order?.items) ? order.items : []).reduce((sum, item) => sum + Math.max(0, Number(item?.qty) || 0), 0);
-    const categories = (Array.isArray(order?.items) ? order.items : []).map((item) => String(item?.category || "").trim()).filter(Boolean);
-    const skus = (Array.isArray(order?.items) ? order.items : []).map((item) => String(item?.sku || "").trim()).filter(Boolean);
-    const productNames = (Array.isArray(order?.items) ? order.items : []).map((item) => String(item?.name || "").trim()).filter(Boolean);
-    const dayKey = getOrderDayIdentity(order?.createdAt);
-    const orderTime = new Date(order?.updatedAt || order?.createdAt || 0).getTime();
-
-    const existing = grouped.get(key) || {
-      key,
-      customer: String(order?.customer || "Khách lẻ").trim() || "Khách lẻ",
-      phone: String(order?.phone || "").trim() || "Chưa có số",
-      normalizedPhone: phone,
-      address: String(order?.address || "").trim() || "Chưa có địa chỉ",
-      ordersCount: 0,
-      totalQty: 0,
-      totalSpent: 0,
-      latestAt: order?.updatedAt || order?.createdAt || "",
-      latestTime: Number.isFinite(orderTime) ? orderTime : 0,
-      maxOrderValue: 0,
-      statuses: new Set(),
-      categories: new Set(),
-      skus: new Set(),
-      productNames: new Set(),
-      dayKeys: new Set()
-    };
-
-    existing.ordersCount += 1;
-    existing.totalQty += totalQty;
-    existing.totalSpent += totalSpent;
-    existing.maxOrderValue = Math.max(existing.maxOrderValue, totalSpent);
-    existing.statuses.add(String(order?.status || "pending"));
-    categories.forEach((item) => existing.categories.add(item));
-    skus.forEach((item) => existing.skus.add(item));
-    productNames.forEach((item) => existing.productNames.add(item));
-    if (dayKey) existing.dayKeys.add(dayKey);
-
-    if (Number.isFinite(orderTime) && orderTime >= existing.latestTime) {
-      existing.latestTime = orderTime;
-      existing.latestAt = order?.updatedAt || order?.createdAt || existing.latestAt;
-      existing.customer = String(order?.customer || existing.customer).trim() || existing.customer;
-      existing.phone = String(order?.phone || existing.phone).trim() || existing.phone;
-      existing.address = String(order?.address || existing.address).trim() || existing.address;
-    }
-
-    grouped.set(key, existing);
-  });
-
-  return [...grouped.values()]
-    .map((customer) => ({
-      ...customer,
-      statuses: [...customer.statuses],
-      categories: [...customer.categories],
-      skus: [...customer.skus],
-      productNames: [...customer.productNames],
-      dayKeys: [...customer.dayKeys],
-      careStatus: getWholesaleCareStatus(customer.key),
-      priorityLevel: getWholesalePriorityLevel(customer)
-    }))
-    .sort((a, b) => b.totalQty - a.totalQty || b.totalSpent - a.totalSpent || b.ordersCount - a.ordersCount || b.latestTime - a.latestTime);
 }
 
 function populateCustomerDataYearOptions(orders) {
@@ -715,101 +629,6 @@ function renderProductInsightsView() {
   `).join("");
 }
 
-async function updateWholesaleCareStatus(customerKey, status) {
-  try {
-    const res = await fetch(API + "/settings/wholesale-care", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customerKey, status })
-    });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(data.error || "Không thể lưu trạng thái chăm khách");
-    }
-
-    state.wholesaleCareStatuses = (data.wholesaleCareStatuses && typeof data.wholesaleCareStatuses === "object")
-      ? data.wholesaleCareStatuses
-      : { ...state.wholesaleCareStatuses, [customerKey]: status };
-
-    renderWholesaleInsights();
-    showToast(status === "contacted" ? "Đã đánh dấu đã chăm khách" : "Đã chuyển về chưa chăm khách");
-  } catch (error) {
-    console.error(error);
-    showToast(error.message || "Lỗi khi lưu trạng thái chăm khách");
-  }
-}
-
-function renderWholesaleInsights() {
-  const customers = buildWholesaleCustomers(state.orders)
-    .filter((customer) => customer.totalSpent >= WHOLESALE_ORDER_THRESHOLD);
-  const featuredCustomers = customers.filter((customer) => customer.priorityLevel !== "normal");
-  const visibleCustomers = customers;
-  const topRevenueCustomer = [...customers].sort((a, b) => b.totalSpent - a.totalSpent || b.totalQty - a.totalQty)[0] || null;
-  const topQuantityCustomer = customers[0] || null;
-
-  const totalCustomers = document.getElementById("wholesaleTotalCustomers");
-  const priorityCustomers = document.getElementById("wholesalePriorityCustomers");
-  const topRevenue = document.getElementById("wholesaleTopRevenue");
-  const topQuantity = document.getElementById("wholesaleTopQuantity");
-  const list = document.getElementById("wholesale-customer-list");
-
-  if (totalCustomers) totalCustomers.textContent = String(customers.length);
-  if (priorityCustomers) priorityCustomers.textContent = String(featuredCustomers.length);
-  if (topRevenue) topRevenue.textContent = formatMoney(topRevenueCustomer?.totalSpent || 0);
-  if (topQuantity) topQuantity.textContent = String(topQuantityCustomer?.totalQty || 0);
-
-  if (!list) return;
-
-  if (!visibleCustomers.length) {
-    list.innerHTML = '<div class="wholesale-empty">Chưa có khách nào có tổng mua từ 1.000.000đ để phân tích.</div>';
-    return;
-  }
-
-  list.innerHTML = visibleCustomers.map((customer, index) => {
-    const badgeText = customer.priorityLevel === "strong"
-      ? "Khách sỉ mạnh"
-      : customer.priorityLevel === "priority"
-        ? "Khách mua nhiều"
-        : "Khách đã mua";
-    const careStatusLabel = customer.careStatus === "contacted" ? "Đã chăm khách" : "Chưa chăm khách";
-    const orderDayCount = customer.dayKeys.length;
-    const topSkus = customer.skus.slice(0, 4).join(" • ") || "Chưa có SKU";
-    const topProducts = customer.productNames.slice(0, 3).join(" • ") || "Chưa có sản phẩm";
-
-    return `
-      <article class="wholesale-customer-card ${customer.priorityLevel}">
-        <div class="wholesale-customer-head">
-          <div>
-            <div class="wholesale-rank">Top ${index + 1}</div>
-            <h3>${customer.customer}</h3>
-            <p>${customer.phone}</p>
-          </div>
-          <div class="wholesale-head-actions">
-            <span class="wholesale-badge ${customer.priorityLevel}">${badgeText}</span>
-            <select class="wholesale-care-select ${customer.careStatus}" onchange="updateWholesaleCareStatus('${String(customer.key).replace(/'/g, "\\'")}', this.value)">
-              <option value="uncontacted" ${customer.careStatus === "uncontacted" ? "selected" : ""}>Chưa chăm khách</option>
-              <option value="contacted" ${customer.careStatus === "contacted" ? "selected" : ""}>Đã chăm khách</option>
-            </select>
-          </div>
-        </div>
-        <div class="wholesale-metrics">
-          <div class="wholesale-metric"><span>Số đơn</span><strong>${customer.ordersCount}</strong></div>
-          <div class="wholesale-metric"><span>Số món</span><strong>${customer.totalQty}</strong></div>
-          <div class="wholesale-metric"><span>Tổng chi</span><strong>${formatMoney(customer.totalSpent)}</strong></div>
-          <div class="wholesale-metric"><span>Đơn lớn nhất</span><strong>${formatMoney(customer.maxOrderValue)}</strong></div>
-        </div>
-        <div class="wholesale-meta-row"><span>Số ngày mua</span><strong>${orderDayCount}</strong></div>
-        <div class="wholesale-meta-row"><span>Địa chỉ</span><strong>${customer.address}</strong></div>
-        <div class="wholesale-meta-row"><span>SKU nổi bật</span><strong>${topSkus}</strong></div>
-        <div class="wholesale-meta-row"><span>Sản phẩm mua</span><strong>${topProducts}</strong></div>
-        <div class="wholesale-meta-row"><span>Lần mua gần nhất</span><strong>${formatOrderTime(customer.latestAt)}</strong></div>
-        <div class="wholesale-meta-row"><span>Trạng thái chăm khách</span><strong>${careStatusLabel}</strong></div>
-      </article>
-    `;
-  }).join("");
-}
-
 function resetProductForm() {
   const currentCategory = getAdminCategory();
   const name = document.getElementById("name");
@@ -860,14 +679,10 @@ async function loadBrandSettings() {
     if (!res.ok) return;
     applyBrandLogo(data.shopLogo);
     shopPublicUrl = sanitizeOrigin(data.shopPublicUrl) || DEFAULT_PUBLIC_SHOP_URL;
-    state.wholesaleCareStatuses = (data.wholesaleCareStatuses && typeof data.wholesaleCareStatuses === "object")
-      ? data.wholesaleCareStatuses
-      : {};
     const serverLimit = Number(data.uploadMaxFileSizeMb);
     uploadMaxFileSizeMb = Number.isFinite(serverLimit) && serverLimit > 0
       ? Math.floor(serverLimit)
       : DEFAULT_UPLOAD_MAX_FILE_SIZE_MB;
-    renderWholesaleInsights();
   } catch (error) {
     applyBrandLogo(DEFAULT_SHOP_LOGO);
   }
@@ -1425,7 +1240,6 @@ async function loadOrders() {
     state.orders = data;
     populateCustomerDataYearOptions(data);
     populateProductInsightsDateOptions(data);
-    renderWholesaleInsights();
     renderCustomerDataView();
     renderProductInsightsView();
 
@@ -1731,8 +1545,6 @@ window.exportOrdersPDF = exportOrdersPDF;
 window.exportOrdersExcel = exportOrdersExcel;
 window.triggerLogoPicker = triggerLogoPicker;
 window.handleLogoFileChange = handleLogoFileChange;
-window.updateWholesaleCareStatus = updateWholesaleCareStatus;
-window.renderWholesaleInsights = renderWholesaleInsights;
 window.renderCustomerDataView = renderCustomerDataView;
 window.renderProductInsightsView = renderProductInsightsView;
 window.setProductInsightsMode = setProductInsightsMode;
