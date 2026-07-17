@@ -318,6 +318,18 @@ function getWholesalePriorityLevel(customer) {
   return "normal";
 }
 
+function getOrderDateParts(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return {
+    day: String(date.getDate()).padStart(2, "0"),
+    month: String(date.getMonth() + 1).padStart(2, "0"),
+    year: String(date.getFullYear())
+  };
+}
+
 function getWholesaleCareStatus(customerKey) {
   const source = state.wholesaleCareStatuses && typeof state.wholesaleCareStatuses === "object"
     ? state.wholesaleCareStatuses
@@ -394,6 +406,171 @@ function buildWholesaleCustomers(orders) {
       priorityLevel: getWholesalePriorityLevel(customer)
     }))
     .sort((a, b) => b.totalQty - a.totalQty || b.totalSpent - a.totalSpent || b.ordersCount - a.ordersCount || b.latestTime - a.latestTime);
+}
+
+function populateCustomerDataYearOptions(orders) {
+  const daySelect = document.getElementById("customer-data-day");
+  const monthSelect = document.getElementById("customer-data-month");
+  const yearSelect = document.getElementById("customer-data-year");
+  if (!daySelect || !monthSelect || !yearSelect) return;
+
+  const currentDay = daySelect.value;
+  const currentMonth = monthSelect.value;
+  const currentValue = yearSelect.value;
+  const years = [...new Set((Array.isArray(orders) ? orders : [])
+    .map((order) => getOrderDateParts(order?.updatedAt || order?.createdAt)?.year || "")
+    .filter(Boolean))].sort((a, b) => Number(b) - Number(a));
+
+  daySelect.innerHTML = '<option value="">Ngày: Tất cả</option>' + Array.from({ length: 31 }, (_, index) => {
+    const day = String(index + 1).padStart(2, "0");
+    return `<option value="${day}">${day}</option>`;
+  }).join("");
+
+  monthSelect.innerHTML = '<option value="">Tháng: Tất cả</option>' + Array.from({ length: 12 }, (_, index) => {
+    const month = String(index + 1).padStart(2, "0");
+    return `<option value="${month}">Tháng ${month}</option>`;
+  }).join("");
+
+  yearSelect.innerHTML = '<option value="">Năm: Tất cả</option>' + years
+    .map((year) => `<option value="${year}">${year}</option>`)
+    .join("");
+
+  if (currentDay) {
+    daySelect.value = currentDay;
+  }
+
+  if (currentMonth) {
+    monthSelect.value = currentMonth;
+  }
+
+  if (years.includes(currentValue)) {
+    yearSelect.value = currentValue;
+  }
+}
+
+function buildCustomerDataRecords(orders) {
+  const grouped = new Map();
+
+  (Array.isArray(orders) ? orders : []).forEach((order) => {
+    const phone = normalizePhoneIdentity(order?.phone);
+    const fallbackKey = `${String(order?.customer || "Khách lẻ").trim().toLowerCase()}__${String(order?.address || "").trim().toLowerCase()}`;
+    const key = phone || fallbackKey;
+    if (!key) return;
+
+    const totalSpent = getOrderGrandTotal(order);
+    const orderTime = new Date(order?.updatedAt || order?.createdAt || 0).getTime();
+    const products = Array.isArray(order?.items) ? order.items : [];
+
+    const existing = grouped.get(key) || {
+      key,
+      customer: String(order?.customer || "Khách lẻ").trim() || "Khách lẻ",
+      phone: String(order?.phone || "").trim() || "Chưa có số",
+      address: String(order?.address || "").trim() || "Chưa có địa chỉ",
+      ordersCount: 0,
+      totalSpent: 0,
+      latestAt: order?.updatedAt || order?.createdAt || "",
+      latestTime: Number.isFinite(orderTime) ? orderTime : 0,
+      productTokens: new Set(),
+      productPills: []
+    };
+
+    existing.ordersCount += 1;
+    existing.totalSpent += totalSpent;
+
+    products.forEach((item) => {
+      const name = String(item?.name || "").trim();
+      const sku = String(item?.sku || "").trim();
+      const variant = String(item?.variantName || "").trim();
+      const qty = Math.max(0, Number(item?.qty) || 0);
+      const token = `${sku}||${name}||${variant}`.toLowerCase();
+      if (!token || existing.productTokens.has(token)) return;
+      existing.productTokens.add(token);
+
+      const labelParts = [];
+      if (sku) labelParts.push(sku);
+      if (name) labelParts.push(name);
+      if (variant) labelParts.push(variant);
+
+      existing.productPills.push({
+        label: labelParts.join(" - ") || "Sản phẩm không rõ tên",
+        qty
+      });
+    });
+
+    if (Number.isFinite(orderTime) && orderTime >= existing.latestTime) {
+      existing.latestTime = orderTime;
+      existing.latestAt = order?.updatedAt || order?.createdAt || existing.latestAt;
+      existing.customer = String(order?.customer || existing.customer).trim() || existing.customer;
+      existing.phone = String(order?.phone || existing.phone).trim() || existing.phone;
+      existing.address = String(order?.address || existing.address).trim() || existing.address;
+    }
+
+    grouped.set(key, existing);
+  });
+
+  return [...grouped.values()]
+    .map((customer) => ({
+      ...customer,
+      searchText: [customer.customer, customer.phone, customer.address, ...customer.productPills.map((item) => item.label)]
+        .join(" ")
+        .toLowerCase()
+    }))
+    .sort((a, b) => b.latestTime - a.latestTime || b.totalSpent - a.totalSpent || b.ordersCount - a.ordersCount);
+}
+
+function renderCustomerDataView() {
+  const searchValue = (document.getElementById("customer-data-search")?.value || "").trim().toLowerCase();
+  const selectedDay = document.getElementById("customer-data-day")?.value || "";
+  const selectedMonth = document.getElementById("customer-data-month")?.value || "";
+  const selectedYear = document.getElementById("customer-data-year")?.value || "";
+
+  const filteredOrders = (Array.isArray(state.orders) ? state.orders : []).filter((order) => {
+    const parts = getOrderDateParts(order?.updatedAt || order?.createdAt);
+    if (!parts) return false;
+    if (selectedDay && parts.day !== selectedDay) return false;
+    if (selectedMonth && parts.month !== selectedMonth) return false;
+    if (selectedYear && parts.year !== selectedYear) return false;
+    return true;
+  });
+
+  const records = buildCustomerDataRecords(filteredOrders).filter((customer) => {
+    if (!searchValue) return true;
+    return customer.searchText.includes(searchValue);
+  });
+
+  const totalCustomersEl = document.getElementById("customerDataTotalCustomers");
+  const totalOrdersEl = document.getElementById("customerDataTotalOrders");
+  const totalSpentEl = document.getElementById("customerDataTotalSpent");
+  const selectedYearEl = document.getElementById("customerDataSelectedYear");
+  const list = document.getElementById("customer-data-list");
+
+  if (totalCustomersEl) totalCustomersEl.textContent = String(records.length);
+  if (totalOrdersEl) totalOrdersEl.textContent = String(filteredOrders.length);
+  if (totalSpentEl) totalSpentEl.textContent = formatMoney(filteredOrders.reduce((sum, order) => sum + getOrderGrandTotal(order), 0));
+  if (selectedYearEl) selectedYearEl.textContent = selectedYear || "Tất cả";
+
+  if (!list) return;
+
+  if (!records.length) {
+    list.innerHTML = '<tr><td colspan="7">Không có dữ liệu khách hàng phù hợp bộ lọc</td></tr>';
+    return;
+  }
+
+  list.innerHTML = records.map((customer) => `
+    <tr>
+      <td class="customer-data-name-cell">${customer.customer}</td>
+      <td class="customer-data-phone-cell">${customer.phone}</td>
+      <td class="customer-data-address-cell">${customer.address}</td>
+      <td class="customer-data-products-cell">
+        <div class="customer-data-products-wrap">
+          ${customer.productPills.map((item) => `<span class="customer-data-pill">${item.label}</span>`).join("") || '<span class="customer-data-pill">Chưa có sản phẩm</span>'}
+        </div>
+      </td>
+      <td class="customer-data-orders-cell">${customer.ordersCount}</td>
+      <td class="customer-data-money-cell">${formatMoney(customer.totalSpent)}</td>
+      <td class="customer-data-time-cell">${formatOrderTime(customer.latestAt)}</td>
+    </tr>
+  `).join("");
 }
 
 async function updateWholesaleCareStatus(customerKey, status) {
@@ -1104,7 +1281,9 @@ async function loadOrders() {
     const res = await fetch(API + "/orders");
     const data = await res.json();
     state.orders = data;
+    populateCustomerDataYearOptions(data);
     renderWholesaleInsights();
+    renderCustomerDataView();
 
     const list = document.getElementById("order-list");
     const search = (document.getElementById("order-search")?.value || "").toLowerCase();
@@ -1410,6 +1589,7 @@ window.triggerLogoPicker = triggerLogoPicker;
 window.handleLogoFileChange = handleLogoFileChange;
 window.updateWholesaleCareStatus = updateWholesaleCareStatus;
 window.renderWholesaleInsights = renderWholesaleInsights;
+window.renderCustomerDataView = renderCustomerDataView;
 
 document.querySelectorAll(".nav-btn").forEach((btn) => {
   btn.addEventListener("click", () => switchTab(btn.dataset.tab));

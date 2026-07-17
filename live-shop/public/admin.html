@@ -7,7 +7,7 @@
 
     <title>Quản lý kho Livestream</title>
 
-    <link rel="stylesheet" href="css/admin.css?v=20260717c">
+    <link rel="stylesheet" href="css/admin.css?v=20260717d">
     <style>
         .brand-title {
             display: flex;
@@ -94,6 +94,8 @@
             <button class="nav-btn" data-tab="orders">🧾 Khách đặt hàng</button>
 
             <button class="nav-btn" data-tab="wholesale">📈 Phân tích khách sỉ</button>
+
+            <button class="nav-btn" data-tab="customer-data">🗂️ Data tổng</button>
 
         </nav>
 
@@ -395,6 +397,112 @@
 
         </section>
 
+        <section id="customer-data-view" class="view-panel">
+
+            <div class="container">
+
+                <header class="header">
+
+                    <div>
+
+                        <h1>🗂️ Data tổng khách hàng</h1>
+
+                        <p>Tổng hợp tên, số điện thoại và lịch sử sản phẩm khách đã từng mua</p>
+
+                    </div>
+
+                </header>
+
+                <section class="dashboard customer-data-dashboard">
+
+                    <div class="card stat-card">
+
+                        <span>Khách trong bộ lọc</span>
+
+                        <h2 id="customerDataTotalCustomers">0</h2>
+
+                    </div>
+
+                    <div class="card stat-card">
+
+                        <span>Số đơn trong bộ lọc</span>
+
+                        <h2 id="customerDataTotalOrders">0</h2>
+
+                    </div>
+
+                    <div class="card stat-card">
+
+                        <span>Tổng chi trong bộ lọc</span>
+
+                        <h2 id="customerDataTotalSpent">0đ</h2>
+
+                    </div>
+
+                    <div class="card stat-card">
+
+                        <span>Năm đang xem</span>
+
+                        <h2 id="customerDataSelectedYear">Tất cả</h2>
+
+                    </div>
+
+                </section>
+
+                <section class="card customer-data-toolbar">
+                    <input
+                        type="text"
+                        id="customer-data-search"
+                        placeholder="🔍 Tìm tên, số điện thoại, sản phẩm..."
+                        onkeyup="renderCustomerDataView()"
+                    >
+                    <select id="customer-data-day" onchange="renderCustomerDataView()">
+                        <option value="">Ngày: Tất cả</option>
+                    </select>
+                    <select id="customer-data-month" onchange="renderCustomerDataView()">
+                        <option value="">Tháng: Tất cả</option>
+                    </select>
+                    <select id="customer-data-year" onchange="renderCustomerDataView()">
+                        <option value="">Năm: Tất cả</option>
+                    </select>
+                </section>
+
+                <section class="card customer-data-table-card">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+
+                                <th>Khách hàng</th>
+
+                                <th>Số điện thoại</th>
+
+                                <th>Địa chỉ gần nhất</th>
+
+                                <th>Sản phẩm đã mua</th>
+
+                                <th>Số đơn</th>
+
+                                <th>Tổng chi</th>
+
+                                <th>Mua gần nhất</th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="customer-data-list"></tbody>
+
+                    </table>
+
+                </section>
+
+            </div>
+
+        </section>
+
     </main>
 
 </div>
@@ -568,7 +676,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
-<script src="js/admin.js?v=20260717c"></script>
+<script src="js/admin.js?v=20260717d"></script>
 
 </body>
 

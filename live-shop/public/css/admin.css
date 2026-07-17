@@ -1550,6 +1550,94 @@ td img{
     text-align:center;
 }
 
+.customer-data-toolbar{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    flex-wrap:wrap;
+}
+
+.customer-data-toolbar input,
+.customer-data-toolbar select{
+    min-height:44px;
+    border:1px solid #d1d5db;
+    border-radius:12px;
+    padding:0 14px;
+    font-size:14px;
+    background:#fff;
+    color:#0f172a;
+}
+
+.customer-data-toolbar input{
+    flex:1 1 320px;
+}
+
+.customer-data-toolbar select{
+    min-width:140px;
+}
+
+.customer-data-table-card{
+    overflow:auto;
+}
+
+.customer-data-name-cell,
+.customer-data-phone-cell,
+.customer-data-address-cell,
+.customer-data-orders-cell,
+.customer-data-money-cell,
+.customer-data-time-cell{
+    font-size:14px;
+    font-weight:600;
+    color:#334155;
+}
+
+.customer-data-name-cell{
+    min-width:180px;
+    color:#0f172a;
+    font-weight:800;
+}
+
+.customer-data-phone-cell{
+    min-width:140px;
+}
+
+.customer-data-address-cell{
+    min-width:240px;
+}
+
+.customer-data-products-cell{
+    min-width:380px;
+}
+
+.customer-data-products-wrap{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+}
+
+.customer-data-pill{
+    display:inline-flex;
+    align-items:center;
+    padding:6px 10px;
+    border-radius:999px;
+    background:#eef6ff;
+    border:1px solid #cfe0f5;
+    color:#1e3a5f;
+    font-size:12px;
+    font-weight:700;
+    line-height:1.3;
+}
+
+.customer-data-money-cell{
+    color:#be123c;
+    font-weight:800;
+    min-width:140px;
+}
+
+.customer-data-time-cell{
+    min-width:150px;
+}
+
 @media(max-width:768px){
     .order-actions{
         min-width:140px;
@@ -1575,6 +1663,17 @@ td img{
     .wholesale-head-actions{
         width:100%;
         align-items:stretch;
+    }
+
+    .customer-data-toolbar{
+        flex-direction:column;
+        align-items:stretch;
+    }
+
+    .customer-data-toolbar input,
+    .customer-data-toolbar select{
+        width:100%;
+        min-width:unset;
     }
 
     .order-customer-cell,
