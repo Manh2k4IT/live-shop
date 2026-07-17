@@ -1583,8 +1583,6 @@ td img{
 .customer-data-name-cell,
 .customer-data-phone-cell,
 .customer-data-address-cell,
-.customer-data-orders-cell,
-.customer-data-money-cell,
 .customer-data-time-cell{
     font-size:14px;
     font-weight:600;
@@ -1603,35 +1601,6 @@ td img{
 
 .customer-data-address-cell{
     min-width:240px;
-}
-
-.customer-data-products-cell{
-    min-width:380px;
-}
-
-.customer-data-products-wrap{
-    display:flex;
-    flex-wrap:wrap;
-    gap:6px;
-}
-
-.customer-data-pill{
-    display:inline-flex;
-    align-items:center;
-    padding:6px 10px;
-    border-radius:999px;
-    background:#eef6ff;
-    border:1px solid #cfe0f5;
-    color:#1e3a5f;
-    font-size:12px;
-    font-weight:700;
-    line-height:1.3;
-}
-
-.customer-data-money-cell{
-    color:#be123c;
-    font-weight:800;
-    min-width:140px;
 }
 
 .customer-data-time-cell{
