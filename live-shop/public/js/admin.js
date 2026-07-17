@@ -390,9 +390,9 @@ function buildWholesaleCustomers(orders) {
 
 function renderWholesaleInsights() {
   const customers = buildWholesaleCustomers(state.orders)
-    .filter((customer) => customer.maxOrderValue >= WHOLESALE_ORDER_THRESHOLD);
+    .filter((customer) => customer.totalSpent >= WHOLESALE_ORDER_THRESHOLD);
   const featuredCustomers = customers.filter((customer) => customer.priorityLevel !== "normal");
-  const visibleCustomers = customers.slice(0, 20);
+  const visibleCustomers = customers;
   const topRevenueCustomer = [...customers].sort((a, b) => b.totalSpent - a.totalSpent || b.totalQty - a.totalQty)[0] || null;
   const topQuantityCustomer = customers[0] || null;
 
@@ -410,7 +410,7 @@ function renderWholesaleInsights() {
   if (!list) return;
 
   if (!visibleCustomers.length) {
-    list.innerHTML = '<div class="wholesale-empty">Chưa có khách nào có giá trị đơn từ 1.000.000đ để phân tích.</div>';
+    list.innerHTML = '<div class="wholesale-empty">Chưa có khách nào có tổng mua từ 1.000.000đ để phân tích.</div>';
     return;
   }
 
